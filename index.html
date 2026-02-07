@@ -50,20 +50,26 @@
   </div>
 
   <!-- Banner inferior -->
-  <div id="banner">
-    <span id="pronostico">Madrid: datos clima</span> |
-    <span id="reloj">00:00</span> |
-    <span id="fecha">--</span>
+<!-- Banner inferior DOBLE ALTO con tiempo por horas -->
+<div id="banner" style="height: 60px; line-height: 30px; font-size: 16px; padding: 10px;">
+  <div id="pronostico" style="font-weight: bold;">Cargando tiempo Madrid...</div>
+  <div style="font-size: 14px; margin-top: 4px;">
+    <span id="reloj">00:00</span> | 
+    <span id="fecha">-- feb</span>
   </div>
+</div>
 
-  <!-- Configuración -->
-  <div id="config" class="oculto">
-    Tiempo foto (s):
-    <input id="tiempo" type="number" value="10" min="3" max="60">
-    <button onclick="cargarFotos()">Refresh fotos</button>
-    <button onclick="toggleConfig()">Cerrar</button>
-  </div>
-  <script>
+<script>
+// === TU API KEY YA FUNCIONA ===
+const WEATHER_KEY = '61ea532fbef834bfea83f7484';
+const LAT_MADRID = 40.4168;
+const LON_MADRID = -3.7038;
+
+// FOTOS (mantiene lo anterior)
+const fotosPrueba = [
+  'https://picsum.photos/1920/1080?random=1',
+  'https://picsum.photos
+
   // FOTOS DE PRUEBA (para que veas algo sí o sí)
   const fotosPrueba = [
     'https://picsum.photos/1920/1080?random=1',
