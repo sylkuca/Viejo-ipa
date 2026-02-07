@@ -8,13 +8,12 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100vh; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: white; }
     
-    /* Slideshow */
     #slideshow { position: fixed; inset: 0; display: none; }
     #slideshow.activo { display: block; }
-    .foto { width: 100vw; height: 100vh; object-fit: cover; display: none; }
-    .foto.activa { display: block; }
+    .foto { width: 100vw; height: 100vh; object-fit: cover; display: none; opacity: 0; transition: opacity 1s; }
+    .foto.activa { display: block; opacity: 1; }
+    .foto.error { opacity: 0.3; background: #222; }
     
-    /* Calendario */
     #calendario { position: fixed; inset: 0; display: none; background: #111; flex-direction: column; }
     #calendario.activo { display: flex; }
     #mes { display: flex; justify-content: space-between; padding: 20px; font-size: 24px; font-weight: bold; background: #222; }
@@ -24,185 +23,170 @@
     .dia.vacio { background: transparent; cursor: default; }
     .evento { margin-top: 4px; font-size: 11px; }
     
-    /* Banner inferior (3 líneas: tiempo + reloj + fecha) */
+    /* BANNER NUEVO: IZQ hora/fecha | DER tiempo Aluche */
     #banner { 
       position: fixed; bottom: 0; left: 0; right: 0; 
-      background: linear-gradient(to top, #0008, transparent); 
-      padding: 12px 20px; font-size: 14px; line-height: 1.3; 
-      backdrop-filter: blur(10px); 
+      height: 45px; display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(to top, #000D, transparent); 
+      padding: 0 20px; backdrop-filter: blur(12px); font-weight: 500;
+      border-top: 1px solid #3333; 
     }
-    #tiempo { font-weight: bold; margin-bottom: 2px; }
-    #reloj { font-size: 16px; }
-    #fecha { font-size: 12px; opacity: 0.8; }
+    #hora-fecha { text-align: left; min-width: 0; }
+    #hora { font-size: 18px; font-weight: bold; margin-bottom: 1px; }
+    #fecha { font-size: 13px; opacity: 0.85; }
+    #tiempo-aluche { text-align: right; min-width: 0; }
+    #tiempo-main { font-size: 15px; font-weight: bold; margin-bottom: 1px; }
+    #tiempo-desc { font-size: 12px; opacity: 0.8; }
     
-    /* Configuración (esquina superior derecha) */
     #config { position: fixed; top: 20px; right: 20px; background: #333; padding: 15px; border-radius: 12px; display: none; z-index: 1000; }
     #config.activo { display: block; }
     label { display: block; margin-bottom: 10px; font-size: 14px; }
     input { width: 60px; padding: 4px; background: #444; color: white; border: none; border-radius: 4px; }
     button { background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-    
-    /* Touch feedback */
     .dia:active, button:active { transform: scale(0.98); }
   </style>
 </head>
 <body>
-  <!-- Slideshow -->
   <div id="slideshow">
-    <img id="foto1" class="foto" src="https://picsum.photos/1920/1080?random=1" alt="Foto 1">
-    <img id="foto2" class="foto" src="https://picsum.photos/1920/1080?random=2" alt="Foto 2">
-    <img id="foto3" class="foto" src="https://picsum.photos/1920/1080?random=3" alt="Foto 3">
-    <!-- Añade más fotos reales de tu álbum Google Photos aquí -->
+    <!-- TUS FOTOS GOOGLE: reemplaza links -->
+    <img id="foto1" class="foto" data-src="https://photos.app.goo.gl/TU_LINK1?w1920-h1080" alt="Foto 1">
+    <img id="foto2" class="foto" data-src="https://photos.app.goo.gl/TU_LINK2?w1920-h1080" alt="Foto 2">
+    <img id="foto3" class="foto" data-src="https://photos.app.goo.gl/TU_LINK3?w1920-h1080" alt="Foto 3">
   </div>
   
-  <!-- Calendario -->
   <div id="calendario">
     <div id="mes"></div>
     <div id="grid-dias"></div>
   </div>
   
-  <!-- Banner inferior -->
+  <!-- BANNER DISTRIBUIDO -->
   <div id="banner">
-    <div id="tiempo">Cargando tiempo Aluche...</div>
-    <div id="reloj">--:--</div>
-    <div id="fecha">-----</div>
+    <div id="hora-fecha">
+      <div id="hora">--:--</div>
+      <div id="fecha">-----</div>
+    </div>
+    <div id="tiempo-aluche">
+      <div id="tiempo-main">Cargando Aluche...</div>
+      <div id="tiempo-desc">--°C</div>
+    </div>
   </div>
   
-  <!-- Configuración -->
   <div id="config">
     <label>Tiempo foto (s): <input id="tiempoInput" type="number" value="10" min="5" max="60"></label>
     <button onclick="guardarConfig()">Guardar</button>
   </div>
 
   <script>
-    // Configuración
-    let tiempoFoto = 10000; // 10s default
-    let fotoActual = 1;
-    let calendarioAbierto = false;
-    let timeoutFoto;
-    
-    // Coordenadas PRECISAS Aluche (Madrid) [web:16]
-    const LAT_ALUCHE = 40.393;
-    const LON_ALUCHE = -3.756;
-    
-    // NUEVA API KEY OpenWeatherMap
+    let tiempoFoto = 10000, fotoActual = 1, numFotos = 3, calendarioAbierto = false, timeoutFoto;
+    const LAT_ALUCHE = 40.393, LON_ALUCHE = -3.756;
     const WEATHER_KEY = '061eaa539b2f8f2eecfa8836f7a48c34';
+    const iconos = { Clear: '☀️', Clouds: '☁️', Rain: '🌧️', Snow: '❄️', Thunderstorm: '⛈️', Drizzle: '🌦️', Mist: '🌫️' };
     
-    // Iconos tiempo (mapeo weather.main + icon)
-    const iconos = {
-      'Clear': '☀️', 'Sun': '☀️',
-      'Clouds': '☁️', 'Partly': '⛅',
-      'Rain': '🌧️', 'Drizzle': '🌦️',
-      'Thunderstorm': '⛈️',
-      'Snow': '❄️', 'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️'
-    };
-    
-    // Inicializar
-    window.addEventListener('load', function(){
+    window.addEventListener('load', () => {
       document.getElementById('slideshow').classList.add('activo');
-      document.getElementById('calendario').classList.remove('activo');
+      precargarFotos();
       cargarFotos();
       actualizarReloj();
       cargarTiempo();
-      setInterval(cargarTiempo, 1800000); // 30min
+      setInterval(cargarTiempo, 1800000);
       setInterval(actualizarReloj, 1000);
-      
-      // Eventos touch universal
       document.addEventListener('click', toggleCalendario);
       document.addEventListener('touchstart', toggleCalendario);
       document.querySelector('#slideshow').addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
-      
-      // Configuración esquina
       document.getElementById('config').addEventListener('click', (e) => e.stopPropagation());
-      // Toque esquina superior derecha abre config (para tablets)
       document.addEventListener('contextmenu', mostrarConfig);
     });
     
-    // Slideshow
+    function precargarFotos() {
+      document.querySelectorAll('.foto').forEach((foto) => {
+        const img = new Image();
+        img.onload = () => foto.dataset.loaded = 'true';
+        img.onerror = () => foto.dataset.loaded = 'false';
+        img.src = foto.dataset.src;
+        foto.src = foto.dataset.src;
+      });
+    }
+    
     function cargarFotos() {
       clearTimeout(timeoutFoto);
-      const fotos = document.querySelectorAll('.foto');
-      fotos.forEach(f => f.classList.remove('activa'));
-      document.getElementById(`foto${fotoActual}`).classList.add('activa');
-      fotoActual = fotoActual % 3 + 1; // Ciclo 1-2-3
+      document.querySelectorAll('.foto').forEach(f => {
+        f.classList.remove('activa', 'error');
+        f.style.opacity = '0';
+      });
+      const fotoEl = document.getElementById(`foto${fotoActual}`);
+      fotoEl.classList.add('activa');
+      if (fotoEl.dataset.loaded === 'false') {
+        fotoEl.classList.add('error');
+        fotoActual = (fotoActual % numFotos) + 1;
+        setTimeout(cargarFotos, 2000);
+        return;
+      }
+      fotoActual = (fotoActual % numFotos) + 1;
       timeoutFoto = setTimeout(cargarFotos, tiempoFoto);
     }
     
-    // Calendario básico (mes actual)
     function toggleCalendario() {
       calendarioAbierto = !calendarioAbierto;
       document.getElementById('slideshow').classList.toggle('activo', !calendarioAbierto);
       document.getElementById('calendario').classList.toggle('activo', calendarioAbierto);
       if (calendarioAbierto) generarCalendario();
-      else setTimeout(cargarFotos, 30000); // Vuelve fotos en 30s
+      else setTimeout(cargarFotos, 30000);
     }
     
     function generarCalendario() {
       const hoy = new Date();
-      const mes = hoy.getMonth();
-      const year = hoy.getFullYear();
+      const mes = hoy.getMonth(), year = hoy.getFullYear();
       document.getElementById('mes').textContent = `${hoy.toLocaleDateString('es-ES',{month:'long'}).toUpperCase()} ${year}`;
-      
       const primerDia = new Date(year, mes, 1).getDay();
       const diasMes = new Date(year, mes + 1, 0).getDate();
       const grid = document.getElementById('grid-dias');
       grid.innerHTML = '';
-      
-      // Días vacíos
       for (let i = 0; i < primerDia; i++) {
-        const div = document.createElement('div');
-        div.className = 'dia vacio';
-        grid.appendChild(div);
+        const div = document.createElement('div'); div.className = 'dia vacio'; grid.appendChild(div);
       }
-      
-      // Días mes
       for (let dia = 1; dia <= diasMes; dia++) {
         const div = document.createElement('div');
-        div.className = 'dia';
-        div.textContent = dia;
+        div.className = 'dia'; div.textContent = dia;
         if (dia === hoy.getDate() && mes === hoy.getMonth()) div.classList.add('activo');
-        div.onclick = () => alert(`Evento día ${dia}`); // Personaliza eventos
+        div.onclick = () => alert(`Evento día ${dia}`);
         grid.appendChild(div);
       }
     }
     
-    // TIEMPO REAL Aluche OpenWeatherMap [page:0]
     async function cargarTiempo() {
       try {
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT_ALUCHE}&lon=${LON_ALUCHE}&appid=${WEATHER_KEY}&units=metric&lang=es`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const data = await res.json();
-        
         const temp = Math.round(data.main.temp);
+        const iconKey = data.weather[0].main;
+        const icon = iconos[iconKey] || '🌤️';
         const desc = data.weather[0].description;
-        const icon = iconos[data.weather[0].main] || '🌤️';
-        
-        document.getElementById('tiempo').textContent = `Aluche: ${temp}°C ${icon} ${desc}`;
+        document.getElementById('tiempo-main').textContent = `Aluche ${temp}°C ${icon}`;
+        document.getElementById('tiempo-desc').textContent = desc;
       } catch (error) {
-        console.error('Tiempo error:', error);
-        document.getElementById('tiempo').textContent = 'Aluche: Tiempo no disponible';
+        document.getElementById('tiempo-main').textContent = 'Aluche --';
+        document.getElementById('tiempo-desc').textContent = 'No disponible';
       }
     }
     
-    // Reloj + fecha
     function actualizarReloj() {
       const ahora = new Date();
-      document.getElementById('reloj').textContent = ahora.toLocaleTimeString('es-ES');
+      document.getElementById('hora').textContent = ahora.toLocaleTimeString('es-ES');
       document.getElementById('fecha').textContent = ahora.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'short'});
     }
     
-    // Config
     function mostrarConfig(e) {
       e.preventDefault();
       document.getElementById('config').classList.toggle('activo');
     }
+    
     function guardarConfig() {
       tiempoFoto = parseInt(document.getElementById('tiempoInput').value) * 1000;
       document.getElementById('config').classList.remove('activo');
-      cargarFotos(); // Reinicia timer
+      cargarFotos();
     }
   </script>
 </body>
 </html>
-
