@@ -103,19 +103,34 @@
         cargarPronostico(); setInterval(cargarPronostico, 30*60*1000);
 
         // FOTOS GOOGLE DRIVE
+       // async function cargarFotos() {
+       //     try {
+       //         document.getElementById('pronostico').textContent = 'Cargando fotos...';
+       //         const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${CARPETA_ID}' in parents and trashed=false&key=${API_KEY_DRIVE}`);
+        //        const data = await res.json();
+          //      fotos = data.files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f.name))
+            //                      .map(f => `https://drive.google.com/uc?id=${f.id}`);
+              //  if (fotos.length === 0) {
+                //    fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
+              //  }
+                //shuffle(fotos);
+                //iniciarSlideshow();
+               // document.getElementById('pronostico').textContent = `${fotos.length} fotos cargadas`;
         async function cargarFotos() {
-            try {
-                document.getElementById('pronostico').textContent = 'Cargando fotos...';
-                const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${CARPETA_ID}' in parents and trashed=false&key=${API_KEY_DRIVE}`);
-                const data = await res.json();
-                fotos = data.files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f.name))
-                                  .map(f => `https://drive.google.com/uc?id=${f.id}`);
-                if (fotos.length === 0) {
-                    fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
-                }
-                shuffle(fotos);
-                iniciarSlideshow();
-                document.getElementById('pronostico').textContent = `${fotos.length} fotos cargadas`;
+    // 👇 FOTOS DE PRUEBA INMEDIATAS (funcionan 100%)
+    fotos = [
+        'https://picsum.photos/1920/1080?random=1',
+        'https://picsum.photos/1920/1080?random=2', 
+        'https://picsum.photos/1920/1080?random=3',
+        'https://picsum.photos/1920/1080?random=4',
+        'https://picsum.photos/1920/1080?random=5'
+    ];
+    
+    shuffle(fotos);
+    iniciarSlideshow();
+    document.getElementById('pronostico').textContent = '5 fotos prueba OK';
+}
+
             } catch(e) { 
                 console.error('Drive error:', e);
                 fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
