@@ -114,42 +114,31 @@
 
 async function cargarTiempo() {
   try {
-    // Tiempo actual para franja próxima
     const ahora = new Date();
-    const horaProx = ahora.getHours() + 1; // Siguiente hora (21:23 → 22:00)
-    
-    // Forecast cada 3h → encuentra más cercana
     const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${ALuche_LAT}&lon=${ALuche_LON}&appid=${WEATHER_KEY}&units=metric&lang=es`);
     const data = await res.json();
     
     if (data.list && data.list.length) {
-      // Encuentra forecast hora más cercana a próxima
-      const horaProxForecast = data.list.find(item => {
-        const dt = new Date(item.dt * 1000).getHours();
-        return Math.abs(dt - horaProx) <= 1 || dt === horaProx; // ±1h o exacto
-      }) || data.list[0]; // Fallback primer forecast
+      // Más cercana próxima 3h
+      const forecastCercano = data.list[0]; // Primera (ej: 21:00, 00:00...)
+      const dt = new Date(forecastCercano.dt * 1000);
+      const horaStr = dt.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
       
       const iconos = {'Clear':'☀️','Clouds':'☁️','Rain':'🌧️','Snow':'❄️','Thunderstorm':'⛈️','Drizzle':'🌦️'};
-      const ico = iconos[horaProxForecast.weather[0].main] || '🌤️';
+      const ico = iconos[forecastCercano.weather[0].main] || '🌤️';
       
-      document.getElementById('tiempo-madrid').textContent = 
-        `Aluche: ${Math.round(horaProxForecast.main.temp)}°C ${ico}`;
+      // ← CENTRO: Temp + icono grande
+      document.getElementById('tiempo-madrid').innerHTML = `${Math.round(forecastCercano.main.temp)}°C<br>${ico}`;
+      // ← Debajo: descripción + hora franja
       document.getElementById('tiempo-detalle').innerHTML = 
-        `${horaProxForecast.weather[0].description}<br>${new Date(horaProxForecast.dt * 1000).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`;
-    } else {
-      // Fallback current weather
-      const resCurrent = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${ALuche_LAT}&lon=${ALuche_LON}&appid=${WEATHER_KEY}&units=metric&lang=es`);
-      const current = await resCurrent.json();
-      const ico = '🌤️';
-      document.getElementById('tiempo-madrid').textContent = `Aluche: ${Math.round(current.main.temp)}°C ${ico}`;
-      document.getElementById('tiempo-detalle').textContent = current.weather[0].description;
+        `${forecastCercano.weather[0].description}<br><small>${horaStr}</small>`;
     }
   } catch(e) {
-    document.getElementById('tiempo-madrid').textContent = 'Aluche: --°C';
+    document.getElementById('tiempo-madrid').innerHTML = `--°C<br>🌤️`;
     document.getElementById('tiempo-detalle').textContent = 'Error API';
-    console.error('Tiempo error:', e);
   }
 }
+
 
 
     async function generarCalendario() {
