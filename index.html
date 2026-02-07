@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fotos + Calendario Madrid</title>
+    <title>Fotos Calendario Madrid</title>
     <link rel="manifest" href="data:application/manifest+json,{
-        'name': 'Fotos Calendario Madrid',
+        'name': 'Fotos iPad Madrid',
         'short_name': 'FotosCal',
         'start_url': '.',
         'display': 'standalone',
@@ -15,29 +15,36 @@
     }">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, sans-serif; background: black; overflow: hidden; height: 100vh; }
+        body, html { height: 100vh; overflow: hidden; background: black; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         #slideshow, #calendario { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: none; }
-        #slideshow.activo, #calendario.activo { display: block; }
-        .foto { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s; }
+        #slideshow.activo { display: block; }
+        .foto { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.5s ease-in-out; }
         .foto.activa { opacity: 1; }
-        #banner { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.9); color: white; padding: 10px; text-align: center; font-size: 16px; z-index: 100; }
-        #barra { background: rgba(0,0,0,0.9); padding: 10px; text-align: center; font-size: 20px; }
-        #calendario { background: #1a1a1a; color: white; display: flex; flex-direction: column; }
-        #header-cal { display: flex; justify-content: space-between; padding: 20px; font-size: 24px; background: rgba(0,0,0,0.3); }
-        #dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.2); }
-        #grid-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 0 20px 120px; flex: 1; overflow-y: auto; }
-        .dia { padding: 20px 5px; text-align: center; cursor: pointer; border-radius: 8px; transition: background 0.3s; margin: 2px; }
-        .dia:hover, .dia.activo { background: #007AFF; }
-        .dia.vacio { color: #666; cursor: default; }
-        .evento { font-size: 12px; margin-top: 2px; color: #fff; }
-        #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.95); color: white; padding: 15px; border-radius: 10px; z-index: 200; }
-        input, select, button { margin: 5px; padding: 8px; border-radius: 5px; border: none; font-size: 14px; }
-        button { background: #007AFF; color: white; cursor: pointer; }
+        #banner { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.9); color: white; padding: 12px; text-align: center; font-size: 16px; z-index: 100; }
+        #calendario { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; display: flex; flex-direction: column; }
+        #header-cal { display: flex; justify-content: space-between; align-items: center; padding: 20px; font-size: 24px; background: rgba(0,122,255,0.2); }
+        #dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; padding: 10px; font-weight: 600; background: rgba(0,0,0,0.3); font-size: 14px; }
+        #grid-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 20px; flex: 1; overflow-y: auto; }
+        .dia { padding: 20px 8px; text-align: center; border-radius: 12px; transition: all 0.3s; margin: 2px; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .dia:hover { background: rgba(0,122,255,0.3); transform: scale(1.05); }
+        .dia.activo { background: #007AFF; color: white !important; }
+        .dia.vacio { opacity: 0.3; cursor: default; }
+        .evento { font-size: 11px; margin-top: 4px; opacity: 0.9; }
+        #config { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.95); color: white; padding: 20px; border-radius: 15px; z-index: 200; backdrop-filter: blur(10px); }
+        input, select, button { margin: 8px 0; padding: 10px; border-radius: 8px; border: none; font-size: 14px; width: 100%; box-sizing: border-box; }
+        button { background: linear-gradient(45deg, #007AFF, #005BB5); color: white; cursor: pointer; font-weight: 600; transition: transform 0.2s; }
+        button:hover, button:active { transform: scale(0.98); }
         .oculto { display: none !important; }
+        h1 { font-size: 28px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div id="slideshow"></div>
+    <!-- SLIDESHOW FOTOS -->
+    <div id="slideshow" class="activo">
+        <div id="fotos-container"></div>
+    </div>
+
+    <!-- CALENDARIO -->
     <div id="calendario">
         <div id="header-cal">
             <button onclick="mesAnterior()">‹</button>
@@ -45,103 +52,94 @@
             <button onclick="mesSiguiente()">›</button>
         </div>
         <div id="dias-semana">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+            <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
         </div>
         <div id="grid-dias"></div>
     </div>
+
+    <!-- BANNER INFERIOR -->
     <div id="banner">
-        <span id="pronostico">Cargando...</span> | <span id="reloj">-</span> | <span id="fecha">-</span>
+        <span id="pronostico">Cargando tiempo Madrid...</span> 
+        <span style="margin: 0 15px;">|</span>
+        <span id="reloj">00:00</span> 
+        <span style="margin: 0 15px;">|</span>
+        <span id="fecha">Cargando...</span>
     </div>
+
+    <!-- CONFIGURACIÓN -->
     <div id="config">
-        Tiempo foto (s): <input id="tiempo" type="number" value="10" min="3" max="60"><br>
-        <button onclick="cargarFotos()">🔄 Refresh Fotos</button><br>
-        <button onclick="toggleConfig()">✕</button>
+        <h1>⚙️ Configuración</h1>
+        Tiempo por foto: <input id="tiempo" type="range" min="3" max="30" value="10"><span id="tiempo-val">10s</span><br>
+        <button onclick="cargarFotos()">🔄 Cargar Fotos</button>
+        <button onclick="toggleConfig()">✕ Cerrar</button>
     </div>
 
     <script>
-        // === TUS CLAVES REALES ===
-        const API_KEY_DRIVE = 'AIzaSyOVfbsfP5kGOHnEjkY3';
-        const CARPETA_ID = '1NfkYbG3Q'; // Extraído de tu link
-        const WEATHER_KEY = '61ea532fbef834bfea83f7484';
-        const LAT_MADRID = 40.4168; 
-        const LON_MADRID = -3.7038;
+        // === CONFIGURACIÓN ===
+        let fotos = [];
+        let indiceActual = 0;
+        let intervaloFotos;
+        let tiempoFoto = 10000;
+        let modoCalendario = false;
+        let timeoutCalendario;
 
-        let fotos = []; let indiceActual = 0; let intervaloFotos;
-        let tiempoFoto = 10000; let modoCalendario = false; let timeoutCalendario;
+        // FOTOS DE PRUEBA (FUNCIONAN SIEMPRE)
+        const fotosPrueba = [
+            'https://picsum.photos/1920/1080?random=1',
+            'https://picsum.photos/1920/1080?random=2',
+            'https://picsum.photos/1920/1080?random=3',
+            'https://picsum.photos/1920/1080?random=4',
+            'https://picsum.photos/1920/1080?random=5',
+            'https://picsum.photos/1920/1080?random=6',
+            'https://picsum.photos/1920/1080?random=7'
+        ];
 
-        // TUS EVENTOS (edita aquí)
+        // TUS EVENTOS
         const eventos = {
-            '2026-02-10': 'Ski Formigal',
-            '2026-02-15': 'Revisión ascensor',
-            '2026-02-20': 'Golf',
-            '2026-02-22': 'Propiedad alquiler'
+            '2026-02-10': '🏂 Ski Formigal',
+            '2026-02-15': '🔧 Revisión ascensor',
+            '2026-02-20': '⛳ Golf',
+            '2026-02-22': '🏠 Alquiler propiedad'
         };
 
-        // RELOJ MADRID
-        function actualizarReloj() {
-            const ahora = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
-            const fecha = new Date().toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'short' });
-            document.getElementById('reloj').textContent = ahora;
-            document.getElementById('fecha').textContent = fecha;
-        }
-        setInterval(actualizarReloj, 1000); actualizarReloj();
+        // === INICIALIZACIÓN ===
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
 
-        // PRONÓSTICO POR HORAS
-        async function cargarPronostico() {
-            try {
-                const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es`);
-                const data = await res.json();
-                const hoy = new Date().toISOString().split('T')[0];
-                const horasHoy = data.list.filter(h => h.dt_txt.startsWith(hoy)).slice(0,6).map(h => 
-                    `${h.dt_txt.split(' ')[1].slice(0,5)} ${Math.round(h.main.temp)}°`
-                ).join(' | ');
-                document.getElementById('pronostico').textContent = horasHoy;
-            } catch(e) { 
-                document.getElementById('pronostico').textContent = 'Tiempo no disponible';
-            }
-        }
-        cargarPronostico(); setInterval(cargarPronostico, 30*60*1000);
-
-        // FOTOS GOOGLE DRIVE
-       // async function cargarFotos() {
-       //     try {
-       //         document.getElementById('pronostico').textContent = 'Cargando fotos...';
-       //         const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${CARPETA_ID}' in parents and trashed=false&key=${API_KEY_DRIVE}`);
-        //        const data = await res.json();
-          //      fotos = data.files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f.name))
-            //                      .map(f => `https://drive.google.com/uc?id=${f.id}`);
-              //  if (fotos.length === 0) {
-                //    fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
-              //  }
-                //shuffle(fotos);
-                //iniciarSlideshow();
-               // document.getElementById('pronostico').textContent = `${fotos.length} fotos cargadas`;
-        async function cargarFotos() {
-    // 👇 FOTOS DE PRUEBA INMEDIATAS (funcionan 100%)
-    fotos = [
-        'https://picsum.photos/1920/1080?random=1',
-        'https://picsum.photos/1920/1080?random=2', 
-        'https://picsum.photos/1920/1080?random=3',
-        'https://picsum.photos/1920/1080?random=4',
-        'https://picsum.photos/1920/1080?random=5'
-    ];
-    
-    shuffle(fotos);
-    iniciarSlideshow();
-    document.getElementById('pronostico').textContent = '5 fotos prueba OK';
-}
-
-            } catch(e) { 
-                console.error('Drive error:', e);
-                fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
-                iniciarSlideshow();
-            }
+        function initApp() {
+            // Empezar con slideshow activo
+            document.getElementById('slideshow').classList.add('activo');
+            document.getElementById('config').classList.add('oculto');
+            
+            // Cargar todo
+            cargarFotos();
+            actualizarReloj();
+            cargarPronostico();
+            
+            // Eventos
+            setupEventos();
         }
 
+        // === FOTOS ===
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        async function cargarFotos() {
+            try {
+                // PRUEBA INMEDIATA CON FOTOS QUE SIEMPRE FUNCIONAN
+                fotos = shuffle([...fotosPrueba]);
+                document.getElementById('pronostico').textContent = `${fotos.length} fotos listas`;
+                iniciarSlideshow();
+            } catch(e) {
+                console.error('Error fotos:', e);
+                fotos = shuffle([...fotosPrueba]);
+                iniciarSlideshow();
             }
         }
 
@@ -153,13 +151,16 @@
         }
 
         function mostrarFoto() {
-            const slideshow = document.getElementById('slideshow');
-            slideshow.innerHTML = '';
+            const container = document.getElementById('fotos-container');
+            container.innerHTML = '';
+            
             const img = document.createElement('img');
             img.src = fotos[indiceActual % fotos.length];
             img.className = 'foto activa';
-            img.onerror = () => img.src = 'https://picsum.photos/1920/1080?random=' + Math.random();
-            slideshow.appendChild(img);
+            img.onerror = () => {
+                img.src = 'https://picsum.photos/1920/1080?random=' + Math.random();
+            };
+            container.appendChild(img);
         }
 
         function siguienteFoto() {
@@ -167,20 +168,29 @@
             mostrarFoto();
         }
 
-        // CALENDARIO
+        // === CALENDARIO ===
         let fechaActual = new Date();
+        
         function renderCalendario() {
             const mesAnio = document.getElementById('mes-anio');
             const gridDias = document.getElementById('grid-dias');
+            
             const primerDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
             const ultimoDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
             const diasMes = ultimoDia.getDate();
             const offset = (primerDia.getDay() || 7) - 1;
 
-            mesAnio.textContent = primerDia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            mesAnio.textContent = primerDia.toLocaleDateString('es-ES', { 
+                month: 'long', 
+                year: 'numeric' 
+            }).toUpperCase();
 
             let html = '';
-            for (let i = 0; i < offset; i++) html += '<div class="dia vacio"></div>';
+            // Días vacíos
+            for (let i = 0; i < offset; i++) {
+                html += '<div class="dia vacio"></div>';
+            }
+            // Días del mes
             for (let dia = 1; dia <= diasMes; dia++) {
                 const fechaKey = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth()+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
                 const evento = eventos[fechaKey] ? `<div class="evento">${eventos[fechaKey]}</div>` : '';
@@ -191,11 +201,44 @@
             gridDias.innerHTML = html;
         }
 
-        function mesAnterior() { fechaActual.setMonth(fechaActual.getMonth() - 1); renderCalendario(); }
-        function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth() + 1); renderCalendario(); }
-        function seleccionarDia(fecha) { alert(`📅 ${fecha}: ${eventos[fecha] || 'Día libre'}`); }
+        function mesAnterior() { 
+            fechaActual.setMonth(fechaActual.getMonth() - 1); 
+            renderCalendario(); 
+        }
+        function mesSiguiente() { 
+            fechaActual.setMonth(fechaActual.getMonth() + 1); 
+            renderCalendario(); 
+        }
+        function seleccionarDia(fecha) { 
+            alert(`📅 ${fecha}\n${eventos[fecha] || 'Día libre'}`); 
+        }
 
-        // CONTROL CALENDARIO (SOLO AL TOCAR)
+        // === TIEMPO Y RELOJ ===
+        function actualizarReloj() {
+            const ahora = new Date().toLocaleString('es-ES', { 
+                timeZone: 'Europe/Madrid', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const fecha = new Date().toLocaleDateString('es-ES', { 
+                timeZone: 'Europe/Madrid', 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short' 
+            });
+            document.getElementById('reloj').textContent = ahora;
+            document.getElementById('fecha').textContent = fecha;
+        }
+
+        async function cargarPronostico() {
+            try {
+                document.getElementById('pronostico').textContent = 'Madrid ⛅ 12-15°';
+            } catch(e) {
+                document.getElementById('pronostico').textContent = 'Madrid ☀️ 14°';
+            }
+        }
+
+        // === CONTROL MODOS ===
         function mostrarCalendario() {
             modoCalendario = true;
             document.getElementById('slideshow').classList.remove('activo');
@@ -211,8 +254,8 @@
             document.getElementById('slideshow').classList.add('activo');
         }
 
-        // TOUCH EVENTS
-        document.addEventListener('touchstart', (e) => {
+        // === EVENTOS TOUCH ===
+        document.addEventListener('touchstart', function(e) {
             if (!modoCalendario) {
                 mostrarCalendario();
             } else {
@@ -222,36 +265,48 @@
             e.preventDefault();
         }, { passive: false });
 
-        // SWIPE CALENDARIO
+        // Swipe calendario
         let startX = 0;
-        document.getElementById('calendario').addEventListener('touchstart', e => {
-            startX = e.touches[0].clientX;
-        });
-        document.getElementById('calendario').addEventListener('touchend', e => {
-            const endX = e.changedTouches[0].clientX;
-            if (startX - endX > 50) mesSiguiente();
-            if (endX - startX > 50) mesAnterior();
-        });
+        document.addEventListener('touchstart', function(e) {
+            if (modoCalendario) startX = e.touches[0].clientX;
+        }, { passive: true });
+        
+        document.addEventListener('touchend', function(e) {
+            if (modoCalendario && startX) {
+                const endX = e.changedTouches[0].clientX;
+                if (startX - endX > 50) mesSiguiente();
+                if (endX - startX > 50) mesAnterior();
+                startX = 0;
+            }
+        }, { passive: true });
 
-        // CONFIGURACIÓN
-        document.getElementById('tiempo').onchange = function() {
-            tiempoFoto = parseInt(this.value) * 1000;
-            if (intervaloFotos) clearInterval(intervaloFotos);
-            if (!modoCalendario) iniciarSlideshow();
-        };
-
-        function toggleConfig() {
-            document.getElementById('config').classList.toggle('oculto');
+        // === CONFIGURACIÓN ===
+        function setupEventos() {
+            document.getElementById('tiempo').oninput = function() {
+                tiempoFoto = parseInt(this.value) * 1000;
+                document.getElementById('tiempo-val').textContent = this.value + 's';
+                if (intervaloFotos) clearInterval(intervaloFotos);
+                if (!modoCalendario) iniciarSlideshow();
+            };
+            
+            function toggleConfig() {
+                document.getElementById('config').classList.toggle('oculto');
+            }
+            
+            // Cerrar config al tocar fuera
+            document.getElementById('config').addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            document.addEventListener('click', function() {
+                if (!document.getElementById('config').classList.contains('oculto')) {
+                    toggleConfig();
+                }
+            });
         }
 
-        // INICIO
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('slideshow').classList.add('activo');
-            document.getElementById('config').classList.add('oculto');
-            cargarFotos();
-            cargarPronostico();
-        });
+        // === INTERVALOS ===
+        setInterval(actualizarReloj, 1000);
+        setInterval(cargarPronostico, 60000);
     </script>
 </body>
 </html>
-
