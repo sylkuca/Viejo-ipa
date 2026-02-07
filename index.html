@@ -56,33 +56,30 @@
     let fotos = [], indiceFoto = 0, timerFoto, calendarioAbierto = false, calendarioTimer;
 
     // ← DRIVE CARPETA COMPARTIDA
-    async function cargarFotosDrive() {
-      try {
-        document.getElementById('status').textContent = 'Cargando Drive...';
-        const proxy = 'https://api.allorigins.win/raw?url=';
-        const url = `https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}`;
-        const res = await fetch(proxy + encodeURIComponent(url));
-        const html = await res.text();
-        
-        const fileIds = [];
-        const idRegex = /data-id="([^"]+)"/g;
-        let match;
-        while (match = idRegex.exec(html)) {
-          const fileId = match[1];
-          if (/\.(jpg|jpeg|png|gif|webp)$/i.test(html.slice(html.indexOf(fileId) - 50, html.indexOf(fileId) + 50)) ||
-              html.includes(`image/${fileId}`)) {
-            fileIds.push(fileId);
-          }
-        }
-        
-        fotos = fileIds.slice(0, 100).map(id => `https://drive.google.com/uc?id=${id}&export=view&w=1920`);
-        document.getElementById('status').textContent = fotos.length ? `¡${fotos.length} fotos Drive!` : 'Carpeta vacía';
-      } catch(e) {
-        console.error('Drive:', e);
-        document.getElementById('status').textContent = 'Carpeta privada → Picsum';
-        fotos = [];
-      }
+   async function cargarFotosDrive() {
+  try {
+    document.getElementById('status').textContent = 'API Drive...';
+    const folderId = '1P9n3U40HpJ_f2Ar5V6D2nkimR7Xs_nUf';
+    
+    // ← DRIVE V3 API PÚBLICA (sin auth para viewer)
+    const url = `https://www.googleapis.com/drive/v3/files?q="${folderId}"%20in%20parents%20and%20(mimeType%3D'image%2Fjpeg'%20or%20mimeType%3D'image%2Fpng')&fields=files(id,name,mimeType,thumbnailLink,size)&pageSize=100`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (data.files && data.files.length) {
+      fotos = data.files.map(file => `https://drive.google.com/uc?id=${file.id}&export=view`);
+      document.getElementById('status').textContent = `¡${fotos.length} fotos API!`;
+    } else {
+      throw new Error('Carpeta vacía/sin imágenes');
     }
+  } catch(e) {
+    console.error('Drive API:', e);
+    document.getElementById('status').textContent = 'Carpeta privada → Picsum infinito';
+    fotos = [];
+  }
+}
+
 
     function fotoAleatoria() {
       return `https://picsum.photos/1920/1080?random=${Math.random()}`;
