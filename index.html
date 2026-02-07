@@ -19,7 +19,13 @@
     .dia.activo { background: #007AFF; }
     .dia.vacio { background: transparent; cursor: default; }
     .evento { margin-top: 4px; font-size: 11px; }
-    #banner { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.9); color: #fff; padding: 10px; font-size: 16px; text-align: center; z-index: 10; height: 60px; line-height: 30px; }
+    /* ← BANNER MÁS ALTO (3 líneas) */
+    #banner { 
+      position: fixed; left: 0; right: 0; bottom: 0; 
+      background: rgba(0,0,0,.95); color: #fff; padding: 12px; 
+      font-size: 15px; text-align: center; z-index: 10; 
+      height: 85px; line-height: 1.3; display: flex; flex-direction: column; justify-content: center;
+    }
     #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,.9); color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; z-index: 11; }
     #config.oculto { display: none; }
     button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 6px; }
@@ -42,9 +48,10 @@
     <div id="grid-dias"></div>
   </div>
   <div id="banner">
-    <div id="pronostico">Cargando tiempo Madrid...</div>
-    <div style="font-size: 14px; margin-top: 4px;">
-      <span id="reloj">00:00</span> | <span id="fecha">-- feb</span>
+    <div id="pronostico" style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">Cargando tiempo Madrid...</div>
+    <div style="font-size: 14px;">
+      <span id="reloj" style="font-weight: bold;"></span> | 
+      <span id="fecha" style="font-size: 13px;"></span>
     </div>
   </div>
   <div id="config">
@@ -53,7 +60,6 @@
   </div>
 
   <script>
-    // ¡TU NUEVA API KEY!
     const WEATHER_KEY = '7be48cf62294a005f85054f13ff72ea9';
     const LAT_MADRID = 40.4168;
     const LON_MADRID = -3.7038;
@@ -73,6 +79,7 @@
       '2026-02-20': 'Golf'
     };
 
+    // Fotos (sin cambios)
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -97,6 +104,7 @@
     }
     function siguienteFoto() { indiceActual++; mostrarFoto(); }
 
+    // Calendario (sin cambios)
     let fechaActual = new Date();
     function renderCalendario() {
       const mesAnio = document.getElementById('mes-anio');
@@ -119,27 +127,40 @@
     function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth()+1); renderCalendario(); }
     function seleccionarDia(f) { alert(f + ': ' + (eventos[f] || 'Libre')); }
 
+    // ← RELOJ MEJORADO (fecha completa)
     function actualizarReloj() {
       const ahora = new Date().toLocaleString('es-ES', {timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit'});
-      const fecha = new Date().toLocaleDateString('es-ES', {timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'short'});
+      const fecha = new Date().toLocaleDateString('es-ES', {timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'long'});
       document.getElementById('reloj').textContent = ahora;
       document.getElementById('fecha').textContent = fecha;
     }
     setInterval(actualizarReloj, 1000);
 
+    // ← API GRATUITA 2.5 (HOURLY FORECAST)
     async function cargarTiempo() {
       try {
-        const res = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es&exclude=minutely,daily`);
-        if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
-        const pronostico = data.hourly.slice(0, 8).map(h => {
-          const hora = new Date(h.dt * 1000).getHours();
-          return `${hora}:00 ${Math.round(h.temp)}°C ${h.weather[0].description}`;
-        }).join(' | ');
-        document.getElementById('pronostico').textContent = `Madrid: ${pronostico}`;
+        // Current + hourly (gratis)
+        const current = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es`);
+        const hourly = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es`);
+        
+        if (!current.ok || !hourly.ok) throw new Error('API error');
+        
+        const currData = await current.json();
+        const hourData = await hourly.json();
+        
+        const tempActual = Math.round(currData.main.temp);
+        const descActual = currData.weather[0].description;
+        
+        // Próximas 4 horas
+        const próximas = hourData.list.slice(0, 4).map(item => {
+          const hora = new Date(item.dt * 1000).getHours();
+          return `${hora}h ${Math.round(item.main.temp)}° ${item.weather[0].main}`;
+        });
+        
+        document.getElementById('pronostico').textContent = `${tempActual}°C ${descActual} | ${próximas.join(' | ')}`;
       } catch (e) {
-        console.error('Tiempo:', e);
-        document.getElementById('pronostico').textContent = 'Tiempo Madrid no disponible';
+        console.error('Tiempo error:', e);
+        document.getElementById('pronostico').textContent = 'Madrid: Tiempo no disponible (revisa consola)';
       }
     }
 
@@ -181,8 +202,9 @@
       cargarFotos();
       actualizarReloj();
       cargarTiempo();
-      setInterval(cargarTiempo, 1800000);
+      setInterval(cargarTiempo, 1800000); // 30min
     });
   </script>
 </body>
 </html>
+
