@@ -2,152 +2,214 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mis Fotos Aluche iPad - FIXED</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🌟 Aluche Slideshow Universal Tablet</title>
   <style>
+    /* RESET UNIVERSAL */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100vh; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    #slideshow { position: fixed; inset: 0; display: none; }
-    #slideshow.activo { display: block; }
-    .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
-    .foto.activa { opacity: 1; }
-    #calendario { position: fixed; inset: 0; display: none; background: #111; color: #fff; z-index: 20; display: flex; flex-direction: column; }
-    #header-cal { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #222; font-size: 20px; }
-    #dias-semana { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; padding: 8px; background: #181818; font-weight: bold; font-size: 14px; }
-    #grid-dias { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; padding: 10px; flex: 1; overflow-y: auto; }
-    .dia { padding: 12px 8px; border-radius: 8px; text-align: center; background: #222; cursor: pointer; font-size: 16px; transition: background 0.2s; }
-    .dia.activo { background: #007AFF; }
-    .dia.vacio { background: transparent; cursor: default; }
-    .evento { margin-top: 4px; font-size: 11px; }
-    #banner { 
-      position: fixed; left: 0; right: 0; bottom: 0; 
-      background: rgba(0,0,0,.95); color: #fff; padding: 12px; 
-      font-size: 15px; text-align: center; z-index: 10; 
-      height: 85px; line-height: 1.3; display: flex; flex-direction: column; justify-content: center;
+    html, body { 
+      height: 100vh; overflow: hidden; 
+      background: radial-gradient(circle at center, #0a0a2e 0%, #1a0033 100%);
+      font-family: system-ui, -apple-system, sans-serif;
+      touch-action: manipulation;
+      -webkit-user-select: none; user-select: none;
     }
-    #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,.95); color: #fff; padding: 16px; border-radius: 12px; font-size: 14px; z-index: 15; backdrop-filter: blur(10px); }
-    #config.oculto { display: none; }
-    button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; margin: 2px; }
-    input { width: 70px; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #333; color: white; }
-    .icono-tiempo { font-size: 22px; margin-right: 4px; }
-    #status { position: fixed; top: 10px; left: 10px; background: rgba(0,122,255,.95); color: white; padding: 12px; border-radius: 10px; font-size: 14px; z-index: 25; backdrop-filter: blur(10px); max-width: 300px; }
-    .dia:hover { background: #005BBB !important; }
+    
+    /* SLIDESHOW CORE */
+    #slideshow { position: fixed; inset: 0; }
+    .foto { 
+      position: absolute; inset: 0; width: 100%; height: 100%; 
+      object-fit: cover; opacity: 0; 
+      transition: opacity 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      loading: eager; decoding: async;
+    }
+    .foto.activa { opacity: 1; transform: scale(1.02); }
+    
+    /* UI UNIVERSAL */
+    #info { 
+      position: fixed; top: 20px; left: 20px; 
+      background: rgba(0,122,255,0.92); backdrop-filter: blur(20px);
+      color: white; padding: 12px 24px; border-radius: 25px; 
+      font-size: clamp(14px, 3vw, 18px); z-index: 100;
+      box-shadow: 0 8px 32px rgba(0,122,255,0.3);
+    }
+    #reloj { 
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+      color: #fff; padding: 20px 40px; border-radius: 40px; 
+      font-size: clamp(24px, 6vw, 36px); font-weight: 700; z-index: 50;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    
+    /* CONFIG RESPONSIVE */
+    #config { 
+      position: fixed; top: 20px; right: 20px; 
+      background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);
+      color: white; padding: 24px; border-radius: 25px; 
+      font-size: clamp(14px, 3vw, 16px); z-index: 100;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      max-width: 280px;
+      opacity: 0; transform: translateY(-20px); transition: all 0.3s ease;
+    }
+    #config.mostrar { opacity: 1; transform: translateY(0); }
+    
+    button { 
+      background: linear-gradient(135deg, #007AFF, #005BB5); 
+      color: white; border: none; padding: 12px 20px; border-radius: 12px; 
+      font-size: clamp(14px, 3vw, 16px); cursor: pointer; margin: 6px 0;
+      width: 100%; box-shadow: 0 4px 15px rgba(0,122,255,0.4);
+      transition: all 0.2s; 
+    }
+    button:active { transform: scale(0.98); }
+    input { 
+      width: 100%; padding: 12px; border-radius: 12px; border: 2px #007AFF solid; 
+      background: rgba(255,255,255,0.95); font-size: clamp(16px, 4vw, 18px); 
+      text-align: center; margin: 6px 0;
+    }
+    
+    /* TOUCH GESTURES */
+    .swipe-hint { 
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      font-size: 24px; opacity: 0.7; z-index: 40; animation: swipe 2s infinite;
+    }
+    @keyframes swipe { 0%,100%{opacity:0.3} 50%{opacity:0.8; transform:translateX(-50%) translateY(10px)} }
+    
+    /* RESPONSIVE TABLET */
+    @media (max-width: 1024px) and (min-width: 768px), (orientation: landscape) {
+      .foto { object-position: center center !important; }
+      #info { top: 15px; left: 15px; font-size: 16px; }
+      #reloj { bottom: 20px; font-size: 28px; }
+    }
+    
+    @media (max-width: 768px) {
+      #info { top: 10px; left: 10px; right: 10px; text-align: center; }
+      #config { top: 10px; right: 10px; left: 10px; max-width: none; }
+      #reloj { bottom: 15px; font-size: 24px; padding: 15px 25px; }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div id="status">🚀 Iniciando Aluche Slideshow...</div>
-  
-  <div id="slideshow" class="activo">
+  <!-- SLIDESHOW -->
+  <div id="slideshow">
     <div id="fotos-container"></div>
   </div>
   
-  <!-- CALENDARIO -->
-  <div id="calendario">
-    <div id="header-cal">
-      <button onclick="toggleCalendario()">✕</button>
-      <span id="mes-anio">Cargando...</span>
-      <div>
-        <button onclick="mesAnterior()">‹</button>
-        <button onclick="mesSiguiente()">›</button>
-      </div>
-    </div>
-    <div id="dias-semana"></div>
-    <div id="grid-dias"></div>
-  </div>
-  
-  <!-- BANNER INFO -->
-  <div id="banner">
-    <div id="reloj" style="font-size: 28px; font-weight: bold;">--:--</div>
-    <div id="tiempo-aluche">Aluche <span id="icono-tiempo">🌤️</span> --°C • 07/02/2026</div>
-  </div>
+  <!-- UI -->
+  <div id="info">🖼️ Galería Madrid/Aluche • Universal Tablet</div>
+  <div id="reloj">20:55</div>
+  <div class="swipe-hint">👆 Swipe ← →</div>
   
   <!-- CONFIG -->
   <div id="config">
-    <div>⏱️ Tiempo foto: <input id="tiempo-input" type="number" value="10" min="3" max="60"> seg</div>
-    <button onclick="cambiarTiempo()">Actualizar</button><br>
-    <button onclick="toggleCalendario()">📅 Calendario</button><br>
-    <button onclick="cargarFotosAlbum()">🔄 Nuevo álbum</button><br>
-    <button onclick="toggleConfig()">✕</button>
+    <div style="margin-bottom: 12px; font-weight: bold;">⚙️ Configuración</div>
+    ⏱️ Tiempo (seg): <input id="tiempo-input" type="number" value="10" min="3" max="30"><br>
+    <button onclick="aplicarTiempo()">▶ Aplicar</button>
+    <button onclick="siguienteFoto()">⏭ Siguiente</button>
+    <button onclick="toggleShuffle()">🔀 Shuffle</button>
+    <button onclick="toggleConfig()">✕ Cerrar</button>
   </div>
 
   <script>
-    // ===================== CONFIG =====================
-    const ALBUM_URL = 'https://photos.app.goo.gl/8FneEkAkuGG3Q66C8';
-    const WEATHER_KEY = '7be48cf62294a005f85054f13ff72ea9';
-    const LAT_ALUCHE = 40.3845;
-    const LON_ALUCHE = -3.7280;
-    
-    const iconosTiempo = {
-      '01d': '☀️', '02d': '⛅', '03d': '☁️', '04d': '☁️', '09d': '🌦️',
-      '10d': '🌧️', '11d': '⛈️', '13d': '❄️', '50d': '🌫️', '01n': '🌙',
-      '02n': '☁️', '03n': '☁️', '04n': '☁️', '09n': '🌦️', '10n': '🌧️',
-      '11n': '⛈️', '13n': '❄️', '50n': '🌫️'
-    };
-    
-    let fotos = [], indiceActual = 0, intervalo = null, tiempoFoto = 10000;
-    let mesActual = new Date().getMonth(), anioActual = new Date().getFullYear();
-
-    // ===================== MÚLTIPLES PROXIES 2026 =====================
-    const PROXIES = [
-      'https://api.allorigins.win/raw?url=',
-      'https://corsproxy.io/?',
-      'https://thingproxy.freeboard.io/fetch/',
-      'https://api.codetabs.com/v1/proxy?quest='
+    // ===================== FOTOS CORS-FREE UNIVERSAL =====================
+    const FOTOS_MADRID = [
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?fit=crop&w=1920&h=1080', // Madrid noche
+      'https://images.unsplash.com/photo-1543782249-3f2e0f3035f9?fit=crop&w=1920&h=1080', // Aluche
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?fit=crop&w=1920&h=1080', // Skyline
+      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?fit=crop&w=1920&h=1080', // Plaza
+      'https://images.unsplash.com/photo-1575453572600-50b489e525a9?fit=crop&w=1920&h=1080', // Luces
+      'https://images.unsplash.com/photo-1511299330437-e21bb73f4d95?fit=crop&w=1920&h=1080', // Retiro
+      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?fit=crop&w=1920&h=1080', // Gran Via
+      'https://images.unsplash.com/photo-1564507592333-a0f60f4b504c?fit=crop&w=1920&h=1080'  // Cibeles
     ];
+    
+    let fotos = [...FOTOS_MADRID], indice = 0, tiempoFoto = 10000, intervalo;
+    let shuffleMode = false;
 
-    // ===================== CARGA FOTOS ULTRA-ROBUSTA =====================
-    async function cargarFotosAlbum() {
-      const status = document.getElementById('status');
-      status.style.display = 'block';
+    // ===================== SLIDESHOW =====================
+    function iniciarSlideshow() {
+      if (intervalo) clearInterval(intervalo);
+      mostrarFoto();
+      intervalo = setInterval(siguienteFoto, tiempoFoto);
+    }
+
+    function mostrarFoto() {
+      const contenedor = document.getElementById('fotos-container');
+      contenedor.innerHTML = '';
       
-      // Intentar álbum Google Photos
-      status.textContent = '🔍 Probando álbum Google Photos...';
-      const albumFotos = await scrapeAlbum();
+      const img = document.createElement('img');
+      img.src = fotos[indice % fotos.length];
+      img.className = 'foto activa';
+      img.alt = 'Madrid/Aluche';
+      img.loading = 'eager';
       
-      if (albumFotos.length > 0) {
-        fotos = shuffle(albumFotos.slice(0, 50));
-        status.textContent = `✅ ¡${fotos.length} fotos del álbum!`;
+      img.addEventListener('load', () => {
+        document.getElementById('info').textContent = `🖼️ ${indice + 1}/${fotos.length} • ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}`;
+      });
+      
+      img.onerror = () => {
+        img.src = FOTOS_MADRID[0]; // Fallback seguro
+      };
+      
+      contenedor.appendChild(img);
+    }
+
+    function siguienteFoto() {
+      indice++;
+      mostrarFoto();
+    }
+
+    function anteriorFoto() {
+      indice = (indice - 1 + fotos.length) % fotos.length;
+      mostrarFoto();
+    }
+
+    // ===================== TOUCH/SWIPE UNIVERSAL =====================
+    let startX = 0, startY = 0;
+    document.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    document.addEventListener('touchend', e => {
+      if (!startX || !startY) return;
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = startX - endX;
+      const diffY = Math.abs(startY - endY);
+      
+      if (Math.abs(diffX) > 50 && diffY < 100) { // Swipe horizontal
+        if (diffX > 0) siguienteFoto(); else anteriorFoto();
+      }
+      startX = 0; startY = 0;
+    }, { passive: true });
+
+    // ===================== CONFIG =====================
+    function aplicarTiempo() {
+      const nuevo = parseInt(document.getElementById('tiempo-input').value) * 1000;
+      if (nuevo >= 3000 && nuevo <= 30000) {
+        tiempoFoto = nuevo;
+        clearInterval(intervalo);
+        setTimeout(iniciarSlideshow, 200);
+      }
+    }
+
+    function toggleShuffle() {
+      shuffleMode = !shuffleMode;
+      if (shuffleMode) {
+        fotos = shuffle([...FOTOS_MADRID]);
+        document.getElementById('info').textContent += ' 🔀 SHUFFLE ON';
       } else {
-        status.textContent = '📸 Usando galería HD infinita (Picsum)';
-        fotos = []; // Trigger infinito
+        fotos = [...FOTOS_MADRID];
+        document.getElementById('info').textContent = '🖼️ Galería Madrid/Aluche';
       }
-      
-      setTimeout(() => status.style.display = 'none', 2500);
-      iniciarSlideshow();
+      indice = 0;
+      mostrarFoto();
     }
 
-    async function scrapeAlbum() {
-      for (let i = 0; i < PROXIES.length; i++) {
-        try {
-          const status = document.getElementById('status');
-          status.textContent = `Proxy ${i+1}/${PROXIES.length}...`;
-          
-          const proxyUrl = `${PROXIES[i]}${encodeURIComponent(ALBUM_URL)}`;
-          const response = await fetch(proxyUrl);
-          if (!response.ok) continue;
-          
-          const html = await response.text();
-          
-          // Buscar lh3.googleusercontent.com URLs
-          const matches = [...html.matchAll(/(https:\/\/lh3\.googleusercontent\.com\/[^&\s"]+)/g)];
-          const urls = matches.map(m => {
-            let url = m[1];
-            if (url.includes('/d/')) {
-              return url.replace(/=w\d+-h\d+|vt=[^&]+/, '=w1920-h1080-rw');
-            }
-            return null;
-          }).filter(Boolean);
-          
-          if (urls.length > 3) return urls; // Éxito
-          
-        } catch (e) {
-          console.warn(`Proxy ${i+1} falló:`, e);
-        }
-      }
-      return []; // Todos fallaron
-    }
-
-    // ===================== SLIDESHOW CON INFINITO =====================
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -156,151 +218,41 @@
       return array;
     }
 
-    function iniciarSlideshow() {
-      if (intervalo) clearInterval(intervalo);
-      indiceActual = 0;
-      mostrarFoto();
-      intervalo = setInterval(siguienteFoto, tiempoFoto);
+    function toggleConfig() {
+      const config = document.getElementById('config');
+      config.classList.toggle('mostrar');
     }
 
-    function mostrarFoto() {
-      const cont = document.getElementById('fotos-container');
-      cont.innerHTML = '';
-      const img = document.createElement('img');
-      
-      let src;
-      if (fotos.length > 0) {
-        src = fotos[indiceActual % fotos.length];
-      } else {
-        // Galería infinita Aluche-style
-        src = `https://picsum.photos/seed/aluche-${indiceActual}/1920/1080`;
-      }
-      
-      img.src = src;
-      img.className = 'foto activa';
-      img.onerror = () => {
-        img.src = `https://picsum.photos/seed/aluche-fail-${Math.random()}/1920/1080`;
-      };
-      cont.appendChild(img);
-    }
+    // ===================== CLICK/TAP =====================
+    document.addEventListener('click', e => {
+      if (e.clientX < window.innerWidth / 2) anteriorFoto();
+      else siguienteFoto();
+    });
 
-    function siguienteFoto() {
-      indiceActual++;
-      mostrarFoto();
-    }
-
-    // ===================== CALENDARIO =====================
-    function renderCalendario() {
-      const fecha = new Date(anioActual, mesActual, 1);
-      document.getElementById('mes-anio').textContent = 
-        fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
-      
-      const diasSemana = document.getElementById('dias-semana');
-      diasSemana.innerHTML = '<div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>';
-      
-      const gridDias = document.getElementById('grid-dias');
-      gridDias.innerHTML = '';
-      
-      const primerDia = new Date(anioActual, mesActual, 1).getDay() || 7;
-      const diasMes = new Date(anioActual, mesActual + 1, 0).getDate();
-      
-      // Vacíos inicio
-      for (let i = 1; i < primerDia; i++) {
-        const div = document.createElement('div');
-        div.className = 'dia vacio';
-        gridDias.appendChild(div);
-      }
-      
-      // Días
-      for (let dia = 1; dia <= diasMes; dia++) {
-        const div = document.createElement('div');
-        div.className = 'dia';
-        div.textContent = dia;
-        div.onclick = () => {
-          document.querySelectorAll('.dia').forEach(d => d.classList.remove('activo'));
-          div.classList.add('activo');
-        };
-        gridDias.appendChild(div);
-      }
-    }
-
-    function mesAnterior() { 
-      mesActual--; 
-      if (mesActual < 0) { mesActual = 11; anioActual--; } 
-      renderCalendario(); 
-    }
-    function mesSiguiente() { 
-      mesActual++; 
-      if (mesActual > 11) { mesActual = 0; anioActual++; } 
-      renderCalendario(); 
-    }
-
-    function toggleCalendario() {
-      const cal = document.getElementById('calendario');
-      const slide = document.getElementById('slideshow');
-      cal.style.display = cal.style.display === 'flex' ? 'none' : 'flex';
-      slide.style.display = slide.style.display === 'block' ? 'none' : 'block';
-      if (cal.style.display === 'flex') renderCalendario();
-    }
-
-    // ===================== TIEMPO + RELOJ =====================
-    function actualizarReloj() {
+    // ===================== RELOJ =====================
+    function tick() {
       const ahora = new Date();
       document.getElementById('reloj').textContent = 
         ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('tiempo-aluche').innerHTML = 
-        `Aluche <span id="icono-tiempo">🌤️</span> ${Math.round(ahora.getDate())}/${ahora.getMonth()+1}/${ahora.getFullYear()}`;
     }
 
-    async function cargarTiempo() {
-      try {
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT_ALUCHE}&lon=${LON_ALUCHE}&appid=${WEATHER_KEY}&units=metric&lang=es`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const iconoKey = data.weather[0].icon;
-        document.getElementById('icono-tiempo').textContent = iconosTiempo[iconoKey] || '🌤️';
-        document.getElementById('tiempo-aluche').innerHTML = 
-          `${data.name} ${iconosTiempo[iconoKey] || '🌤️'} ${Math.round(data.main.temp)}°C • 07/02/2026`;
-      } catch (e) {
-        console.warn('Tiempo fail:', e);
-      }
-    }
+    // ===================== INIT =====================
+    window.addEventListener('load', () => {
+      document.getElementById('info').textContent = '🚀 Universal Tablet Ready • Swipe/Tap';
+      iniciarSlideshow();
+      tick();
+      setInterval(tick, 1000);
+      
+      // Auto-ocultar config
+      setTimeout(() => document.getElementById('config').classList.remove('mostrar'), 5000);
+    });
 
-    // ===================== CONFIG =====================
-    function cambiarTiempo() {
-      const valor = parseInt(document.getElementById('tiempo-input').value);
-      if (valor >= 3 && valor <= 60) {
-        tiempoFoto = valor * 1000;
-        if (intervalo) clearInterval(intervalo);
-        setTimeout(iniciarSlideshow, 100);
-        document.getElementById('status').textContent = `⏱️ ${valor}s OK`;
-        setTimeout(() => document.getElementById('status').style.display = 'none', 1500);
-      }
-    }
-
-    function toggleConfig() {
-      document.getElementById('config').classList.toggle('oculto');
-    }
-
-    // ===================== INICIALIZACIÓN =====================
-    window.addEventListener('load', async () => {
-      document.getElementById('status').textContent = '✅ Listo! Cargando fotos...';
-      
-      // Ocultar config inicial
-      document.getElementById('config').classList.add('oculto');
-      
-      // Cargar todo
-      await cargarFotosAlbum();
-      renderCalendario();
-      actualizarReloj();
-      cargarTiempo();
-      
-      // Intervalos
-      setInterval(actualizarReloj, 500);
-      setInterval(cargarTiempo, 10 * 60 * 1000); // 10min
-      
-      setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
+    // ===================== PWA FEATURES =====================
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      deferredPrompt = e;
     });
   </script>
 </body>
 </html>
+
