@@ -1,102 +1,187 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 Marco Digital</title>
-
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{
-  height:100%;
-  background:#000;
-  overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-}
-
-#slideshow{
-  position:fixed;
-  inset:0;
-}
-
-#foto{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  opacity:0;
-  transition:opacity 1.2s ease-in-out;
-}
-
-#status{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:rgba(0,0,0,.85);
-  color:#0f0;
-  padding:20px 28px;
-  border-radius:14px;
-  font-size:16px;
-  z-index:10;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📸 Drive Aluche iPad</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100vh; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #slideshow { position: fixed; inset: 0; display: none; z-index: 1; }
+    #slideshow.activo { display: block; }
+    .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
+    .foto.activa { opacity: 1; }
+    #calendario { position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: white; display: none; flex-direction: column; z-index: 10; }
+    #calendario.activo { display: flex; }
+    #header-cal { display: flex; justify-content: space-between; padding: 20px; background: rgba(0,122,255,0.3); }
+    #mes-ano { font-size: 24px; font-weight: bold; }
+    #btn-cerrar { background: none; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0 10px; }
+    #grid-dias { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; padding: 20px; flex: 1; overflow-y: auto; }
+    .dia { padding: 18px 6px; border-radius: 12px; text-align: center; background: #333; cursor: pointer; font-size: 18px; transition: all 0.2s; }
+    .dia.activo, .dia:hover { background: #007AFF; color: white; transform: scale(1.05); }
+    .dia.vacio { background: transparent; cursor: default; }
+    /* Banner: RELOJ IZQ | TIEMPO CENTRO | DETALLE CENTRO */
+    #banner { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); color: white; height: 90px; display: flex; align-items: center; padding: 10px 15px; font-size: 16px; z-index: 5; justify-content: space-around; }
+    #reloj { flex: 1; text-align: left; font-weight: bold; font-size: 20px; line-height: 1.2; }
+    #tiempo-madrid { flex: 1.5; text-align: center; font-size: 22px; font-weight: bold; line-height: 1.1; }
+    #tiempo-detalle { flex: 1; text-align: center; font-size: 14px; opacity: 0.9; line-height: 1.2; }
+    #status { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.9); color: #00FF00; padding: 20px; border-radius: 12px; z-index: 20; font-size: 16px; text-align: center; }
+  </style>
 </head>
-
 <body>
+  <div id="slideshow">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" class="foto activa" id="foto-actual">
+  </div>
+  
+  <div id="calendario">
+    <div id="header-cal">
+      <div id="mes-ano"></div>
+      <button id="btn-cerrar">✕</button>
+    </div>
+    <div id="grid-dias"></div>
+  </div>
+  
+  <div id="banner">
+    <div id="reloj"></div>
+    <div id="tiempo-madrid"></div>
+    <div id="tiempo-detalle"></div>
+  </div>
+  
+  <div id="status">Iniciando...</div>
 
-<div id="slideshow">
-  <img id="foto" alt="foto">
-</div>
+  <script>
+    const DRIVE_FOLDER_ID = '1P9n3U40HpJ_f2Ar5V6D2nkimR7Xs_nUf'; // Tu carpeta
+    const WEATHER_KEY = '061eaa539b2f8f2eecfa8836f7a48c34';
+    const ALuche_LAT = 40.393, ALuche_LON = -3.756;
+    let fotos = [], indiceFoto = 0, timerFoto, calendarioAbierto = false, calendarioTimer;
 
-<div id="status">Iniciando…</div>
-
-<script>
-const TIEMPO_FOTO = 10000;
-let fotos = [];
-let indice = 0;
-let timer = null;
-
-async function iniciar() {
-  const status = document.getElementById('status');
-
-  try {
-    status.textContent = 'Actualizando álbum…';
-    await fetch('drive_fotos.php', { cache: 'no-store' });
-
-    status.textContent = 'Cargando fotos…';
-    const r = await fetch('fotos.json', { cache: 'no-store' });
-    fotos = await r.json();
-
-    if (!Array.isArray(fotos) || fotos.length === 0) {
-      throw new Error('Álbum vacío');
+    // ← DRIVE CARPETA COMPARTIDA
+    async function cargarFotosDrive() {
+      try {
+        document.getElementById('status').textContent = 'Cargando Drive...';
+        const proxy = 'https://api.allorigins.win/raw?url=';
+        const url = `https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}`;
+        const res = await fetch(proxy + encodeURIComponent(url));
+        const html = await res.text();
+        
+        const fileIds = [];
+        const idRegex = /data-id="([^"]+)"/g;
+        let match;
+        while (match = idRegex.exec(html)) {
+          const fileId = match[1];
+          if (/\.(jpg|jpeg|png|gif|webp)$/i.test(html.slice(html.indexOf(fileId) - 50, html.indexOf(fileId) + 50)) ||
+              html.includes(`image/${fileId}`)) {
+            fileIds.push(fileId);
+          }
+        }
+        
+        fotos = fileIds.slice(0, 100).map(id => `https://drive.google.com/uc?id=${id}&export=view&w=1920`);
+        document.getElementById('status').textContent = fotos.length ? `¡${fotos.length} fotos Drive!` : 'Carpeta vacía';
+      } catch(e) {
+        console.error('Drive:', e);
+        document.getElementById('status').textContent = 'Carpeta privada → Picsum';
+        fotos = [];
+      }
     }
 
-    fotos.sort(() => Math.random() - 0.5);
-    mostrar();
-    timer = setInterval(mostrar, TIEMPO_FOTO);
+    function fotoAleatoria() {
+      return `https://picsum.photos/1920/1080?random=${Math.random()}`;
+    }
 
-    status.style.display = 'none';
+    function siguienteFoto() {
+      const img = document.getElementById('foto-actual');
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = fotos.length ? fotos[indiceFoto = (indiceFoto + 1) % fotos.length] : fotoAleatoria();
+        img.style.opacity = '1';
+      }, 600);
+    }
 
-  } catch (e) {
-    status.textContent = '❌ Error cargando fotos';
-    console.error(e);
-  }
-}
+    function cargarFotos() {
+      cargarFotosDrive().then(() => {
+        siguienteFoto();
+        timerFoto = setInterval(siguienteFoto, 10000); // 10s
+      });
+    }
 
-function mostrar() {
-  const img = document.getElementById('foto');
-  img.style.opacity = 0;
+    function actualizarReloj() {
+      const ahora = new Date();
+      document.getElementById('reloj').innerHTML = 
+        ahora.toLocaleTimeString('es-ES', {hour12: false}) + '<br>' + 
+        ahora.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'});
+    }
 
-  setTimeout(() => {
-    img.src = fotos[indice];
-    indice = (indice + 1) % fotos.length;
-    img.style.opacity = 1;
-  }, 600);
-}
+    async function cargarTiempo() {
+      try {
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${ALuche_LAT}&lon=${ALuche_LON}&appid=${WEATHER_KEY}&units=metric&lang=es`);
+        const data = await res.json();
+        const fc = data.list[0];
+        const dt = new Date(fc.dt * 1000);
+        const horaStr = dt.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+        
+        const iconos = {'Clear':'☀️','Clouds':'☁️','Rain':'🌧️','Snow':'❄️','Thunderstorm':'⛈️','Drizzle':'🌦️'};
+        const ico = iconos[fc.weather[0].main] || '🌤️';
+        
+        document.getElementById('tiempo-madrid').innerHTML = `${Math.round(fc.main.temp)}°C<br>${ico}`;
+        document.getElementById('tiempo-detalle').innerHTML = `${fc.weather[0].description}<br><small>${horaStr}</small>`;
+      } catch(e) {
+        document.getElementById('tiempo-madrid').innerHTML = `--°C<br>🌤️`;
+        document.getElementById('tiempo-detalle').innerHTML = 'Error<small></small>';
+      }
+    }
 
-window.addEventListener('load', iniciar);
-</script>
+    function toggleCalendario() {
+      calendarioAbierto = !calendarioAbierto;
+      const cal = document.getElementById('calendario');
+      if (calendarioAbierto) {
+        cal.classList.add('activo');
+        generarCalendario();
+        calendarioTimer = setTimeout(toggleCalendario, 10000);
+      } else {
+        cal.classList.remove('activo');
+      }
+    }
 
+    function generarCalendario() {
+      const hoy = new Date(), mes = hoy.getMonth(), year = hoy.getFullYear();
+      document.getElementById('mes-ano').textContent = 
+        hoy.toLocaleDateString('es-ES', {month: 'long', year: 'numeric'});
+      
+      const primerDia = new Date(year, mes, 1).getDay();
+      const diasMes = new Date(year, mes + 1, 0).getDate();
+      const grid = document.getElementById('grid-dias');
+      grid.innerHTML = '';
+      
+      for (let i = 0; i < primerDia; i++) {
+        const div = document.createElement('div'); div.className = 'dia vacio'; grid.appendChild(div);
+      }
+      for (let dia = 1; dia <= diasMes; dia++) {
+        const div = document.createElement('div');
+        div.className = 'dia';
+        div.textContent = dia;
+        if (dia === hoy.getDate() && mes === hoy.getMonth()) div.classList.add('activo');
+        grid.appendChild(div);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      document.getElementById('slideshow').classList.add('activo');
+      
+      // Touch iPad + click
+      const slideshow = document.getElementById('slideshow');
+      slideshow.addEventListener('touchend', (e) => { e.preventDefault(); toggleCalendario(); }, {passive: false});
+      slideshow.addEventListener('click', toggleCalendario);
+      
+      document.getElementById('btn-cerrar').onclick = toggleCalendario;
+      
+      cargarFotos();
+      actualizarReloj(); cargarTiempo();
+      setInterval(actualizarReloj, 1000);
+      setInterval(cargarTiempo, 30*60*1000);
+      
+      setTimeout(() => document.getElementById('status').style.display = 'none', 5000);
+    });
+  </script>
 </body>
 </html>
 
