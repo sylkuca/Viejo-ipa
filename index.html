@@ -48,17 +48,16 @@
     </div>
   </div>
   <div id="config">
-    <label>Tiempo foto (s): <input id="tiempo" type="number" value="10" min="5" max="60"></label><br>
+    Tiempo foto (s): <input id="tiempo" type="number" value="10" min="5" max="60"><br>
     <button onclick="toggleConfig()">Cerrar</button>
   </div>
 
   <script>
-    // Configuración (¡CAMBIAR API KEY por una nueva válida!)
-    const WEATHER_KEY = '61ea532fbef834bfea83f7484'; // ← NUEVA en openweathermap.org/api (gratis)
+    // ¡TU NUEVA API KEY!
+    const WEATHER_KEY = '7be48cf62294a005f85054f13ff72ea9';
     const LAT_MADRID = 40.4168;
     const LON_MADRID = -3.7038;
 
-    // Fotos prueba (FIABLES, sin CORS)
     const fotosPrueba = [
       'https://picsum.photos/1920/1080?random=1',
       'https://picsum.photos/1920/1080?random=2',
@@ -74,7 +73,6 @@
       '2026-02-20': 'Golf'
     };
 
-    // Funciones fotos
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -82,14 +80,10 @@
       }
       return arr;
     }
-    function cargarFotos() {
-      fotos = shuffle([...fotosPrueba]);
-      iniciarSlideshow();
-    }
+    function cargarFotos() { fotos = shuffle([...fotosPrueba]); iniciarSlideshow(); }
     function iniciarSlideshow() {
       if (intervalo) clearInterval(intervalo);
-      indiceActual = 0;
-      mostrarFoto();
+      indiceActual = 0; mostrarFoto();
       intervalo = setInterval(siguienteFoto, tiempoFoto);
     }
     function mostrarFoto() {
@@ -98,15 +92,11 @@
       const img = document.createElement('img');
       img.src = fotos[indiceActual % fotos.length];
       img.className = 'foto activa';
-      img.onerror = () => img.src = fotosPrueba[0]; // Fallback
+      img.onerror = () => img.src = fotosPrueba[0];
       cont.appendChild(img);
     }
-    function siguienteFoto() {
-      indiceActual++;
-      mostrarFoto();
-    }
+    function siguienteFoto() { indiceActual++; mostrarFoto(); }
 
-    // Calendario
     let fechaActual = new Date();
     function renderCalendario() {
       const mesAnio = document.getElementById('mes-anio');
@@ -117,7 +107,7 @@
       const offset = (primerDia.getDay() || 7) - 1;
       mesAnio.textContent = primerDia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
       let html = '';
-      for (let i = 0; i < offset; i++) html += '<div class="dia vacio"></div>'; // ← FIX typo
+      for (let i = 0; i < offset; i++) html += '<div class="dia vacio"></div>';
       for (let d = 1; d <= diasMes; d++) {
         const key = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const ev = eventos[key] ? `<div class="evento">${eventos[key]}</div>` : '';
@@ -129,7 +119,6 @@
     function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth()+1); renderCalendario(); }
     function seleccionarDia(f) { alert(f + ': ' + (eventos[f] || 'Libre')); }
 
-    // Reloj
     function actualizarReloj() {
       const ahora = new Date().toLocaleString('es-ES', {timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit'});
       const fecha = new Date().toLocaleDateString('es-ES', {timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'short'});
@@ -138,22 +127,22 @@
     }
     setInterval(actualizarReloj, 1000);
 
-    // ← FUNCIÓN TIEMPO NUEVA (¡FALTABA!)
     async function cargarTiempo() {
       try {
-        const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es&exclude=minutely,daily,history`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('API error: ' + res.status);
+        const res = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es&exclude=minutely,daily`);
+        if (!res.ok) throw new Error(res.status);
         const data = await res.json();
-        const hoy = data.hourly.slice(0, 6).map(h => `${new Date(h.dt * 1000).getHours()}:00 ${Math.round(h.temp)}°C ${h.weather[0].description}`).join(' | ');
-        document.getElementById('pronostico').textContent = `Madrid hoy: ${hoy}`;
+        const pronostico = data.hourly.slice(0, 8).map(h => {
+          const hora = new Date(h.dt * 1000).getHours();
+          return `${hora}:00 ${Math.round(h.temp)}°C ${h.weather[0].description}`;
+        }).join(' | ');
+        document.getElementById('pronostico').textContent = `Madrid: ${pronostico}`;
       } catch (e) {
-        console.error('Tiempo falla:', e); // No bloquea app
-        document.getElementById('pronostico').textContent = 'Tiempo no disponible (revisa API key)';
+        console.error('Tiempo:', e);
+        document.getElementById('pronostico').textContent = 'Tiempo Madrid no disponible';
       }
     }
 
-    // Mostrar/ocultar calendario
     function mostrarCalendario() {
       modoCalendario = true;
       document.getElementById('slideshow').classList.remove('activo');
@@ -171,17 +160,12 @@
       iniciarSlideshow();
     }
 
-    // Touch: solo mostrar calendario
     document.addEventListener('touchstart', (e) => {
       if (!modoCalendario) mostrarCalendario();
-      else {
-        clearTimeout(timeoutCalendario);
-        timeoutCalendario = setTimeout(volverFotos, 10000);
-      }
+      else { clearTimeout(timeoutCalendario); timeoutCalendario = setTimeout(volverFotos, 10000); }
       e.preventDefault();
     }, {passive: false});
 
-    // Config
     document.getElementById('tiempo').onchange = function() {
       tiempoFoto = parseInt(this.value) * 1000;
       if (!modoCalendario) iniciarSlideshow();
@@ -190,17 +174,15 @@
       document.getElementById('config').classList.toggle('oculto');
     }
 
-    // ← INICIO (sin bloqueos)
     window.addEventListener('load', () => {
       document.getElementById('slideshow').style.display = 'block';
       document.getElementById('calendario').style.display = 'none';
       document.getElementById('config').classList.add('oculto');
       cargarFotos();
       actualizarReloj();
-      cargarTiempo(); // ← Async, no bloquea
-      setInterval(cargarTiempo, 1800000); // Cada 30min
+      cargarTiempo();
+      setInterval(cargarTiempo, 1800000);
     });
   </script>
 </body>
 </html>
-
