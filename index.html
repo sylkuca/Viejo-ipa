@@ -24,4 +24,219 @@
         #barra { background: rgba(0,0,0,0.9); padding: 10px; text-align: center; font-size: 20px; }
         #calendario { background: #1a1a1a; color: white; display: flex; flex-direction: column; }
         #header-cal { display: flex; justify-content: space-between; padding: 20px; font-size: 24px; background: rgba(0,0,0,0.3); }
-        #dias-semana { dis
+        #dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.2); }
+        #grid-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 0 20px 120px; flex: 1; overflow-y: auto; }
+        .dia { padding: 20px 5px; text-align: center; cursor: pointer; border-radius: 8px; transition: background 0.3s; margin: 2px; }
+        .dia:hover, .dia.activo { background: #007AFF; }
+        .dia.vacio { color: #666; cursor: default; }
+        .evento { font-size: 12px; margin-top: 2px; color: #fff; }
+        #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.95); color: white; padding: 15px; border-radius: 10px; z-index: 200; }
+        input, select, button { margin: 5px; padding: 8px; border-radius: 5px; border: none; font-size: 14px; }
+        button { background: #007AFF; color: white; cursor: pointer; }
+        .oculto { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="slideshow"></div>
+    <div id="calendario">
+        <div id="header-cal">
+            <button onclick="mesAnterior()">‹</button>
+            <span id="mes-anio">FEbrero 2026</span>
+            <button onclick="mesSiguiente()">›</button>
+        </div>
+        <div id="dias-semana">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+        </div>
+        <div id="grid-dias"></div>
+    </div>
+    <div id="banner">
+        <span id="pronostico">Cargando...</span> | <span id="reloj">-</span> | <span id="fecha">-</span>
+    </div>
+    <div id="config">
+        Tiempo foto (s): <input id="tiempo" type="number" value="10" min="3" max="60"><br>
+        <button onclick="cargarFotos()">🔄 Refresh Fotos</button><br>
+        <button onclick="toggleConfig()">✕</button>
+    </div>
+
+    <script>
+        // === TUS CLAVES REALES ===
+        const API_KEY_DRIVE = 'AIzaSyOVfbsfP5kGOHnEjkY3';
+        const CARPETA_ID = '1NfkYbG3Q'; // Extraído de tu link
+        const WEATHER_KEY = '61ea532fbef834bfea83f7484';
+        const LAT_MADRID = 40.4168; 
+        const LON_MADRID = -3.7038;
+
+        let fotos = []; let indiceActual = 0; let intervaloFotos;
+        let tiempoFoto = 10000; let modoCalendario = false; let timeoutCalendario;
+
+        // TUS EVENTOS (edita aquí)
+        const eventos = {
+            '2026-02-10': 'Ski Formigal',
+            '2026-02-15': 'Revisión ascensor',
+            '2026-02-20': 'Golf',
+            '2026-02-22': 'Propiedad alquiler'
+        };
+
+        // RELOJ MADRID
+        function actualizarReloj() {
+            const ahora = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
+            const fecha = new Date().toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'short' });
+            document.getElementById('reloj').textContent = ahora;
+            document.getElementById('fecha').textContent = fecha;
+        }
+        setInterval(actualizarReloj, 1000); actualizarReloj();
+
+        // PRONÓSTICO POR HORAS
+        async function cargarPronostico() {
+            try {
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es`);
+                const data = await res.json();
+                const hoy = new Date().toISOString().split('T')[0];
+                const horasHoy = data.list.filter(h => h.dt_txt.startsWith(hoy)).slice(0,6).map(h => 
+                    `${h.dt_txt.split(' ')[1].slice(0,5)} ${Math.round(h.main.temp)}°`
+                ).join(' | ');
+                document.getElementById('pronostico').textContent = horasHoy;
+            } catch(e) { 
+                document.getElementById('pronostico').textContent = 'Tiempo no disponible';
+            }
+        }
+        cargarPronostico(); setInterval(cargarPronostico, 30*60*1000);
+
+        // FOTOS GOOGLE DRIVE
+        async function cargarFotos() {
+            try {
+                document.getElementById('pronostico').textContent = 'Cargando fotos...';
+                const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${CARPETA_ID}' in parents and trashed=false&key=${API_KEY_DRIVE}`);
+                const data = await res.json();
+                fotos = data.files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f.name))
+                                  .map(f => `https://drive.google.com/uc?id=${f.id}`);
+                if (fotos.length === 0) {
+                    fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
+                }
+                shuffle(fotos);
+                iniciarSlideshow();
+                document.getElementById('pronostico').textContent = `${fotos.length} fotos cargadas`;
+            } catch(e) { 
+                console.error('Drive error:', e);
+                fotos = ['https://picsum.photos/1920/1080?random=1','https://picsum.photos/1920/1080?random=2'];
+                iniciarSlideshow();
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function iniciarSlideshow() {
+            if (intervaloFotos) clearInterval(intervaloFotos);
+            indiceActual = 0;
+            mostrarFoto();
+            intervaloFotos = setInterval(siguienteFoto, tiempoFoto);
+        }
+
+        function mostrarFoto() {
+            const slideshow = document.getElementById('slideshow');
+            slideshow.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = fotos[indiceActual % fotos.length];
+            img.className = 'foto activa';
+            img.onerror = () => img.src = 'https://picsum.photos/1920/1080?random=' + Math.random();
+            slideshow.appendChild(img);
+        }
+
+        function siguienteFoto() {
+            indiceActual++;
+            mostrarFoto();
+        }
+
+        // CALENDARIO
+        let fechaActual = new Date();
+        function renderCalendario() {
+            const mesAnio = document.getElementById('mes-anio');
+            const gridDias = document.getElementById('grid-dias');
+            const primerDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+            const ultimoDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
+            const diasMes = ultimoDia.getDate();
+            const offset = (primerDia.getDay() || 7) - 1;
+
+            mesAnio.textContent = primerDia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+
+            let html = '';
+            for (let i = 0; i < offset; i++) html += '<div class="dia vacio"></div>';
+            for (let dia = 1; dia <= diasMes; dia++) {
+                const fechaKey = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth()+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+                const evento = eventos[fechaKey] ? `<div class="evento">${eventos[fechaKey]}</div>` : '';
+                const hoy = new Date();
+                const esHoy = fechaKey === `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+                html += `<div class="dia ${esHoy ? 'activo' : ''}" onclick="seleccionarDia('${fechaKey}')">${dia}${evento}</div>`;
+            }
+            gridDias.innerHTML = html;
+        }
+
+        function mesAnterior() { fechaActual.setMonth(fechaActual.getMonth() - 1); renderCalendario(); }
+        function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth() + 1); renderCalendario(); }
+        function seleccionarDia(fecha) { alert(`📅 ${fecha}: ${eventos[fecha] || 'Día libre'}`); }
+
+        // CONTROL CALENDARIO (SOLO AL TOCAR)
+        function mostrarCalendario() {
+            modoCalendario = true;
+            document.getElementById('slideshow').classList.remove('activo');
+            document.getElementById('calendario').classList.add('activo');
+            renderCalendario();
+            timeoutCalendario = setTimeout(volverFotos, 10000); // 10 segundos
+        }
+
+        function volverFotos() {
+            modoCalendario = false;
+            clearTimeout(timeoutCalendario);
+            document.getElementById('calendario').classList.remove('activo');
+            document.getElementById('slideshow').classList.add('activo');
+        }
+
+        // TOUCH EVENTS
+        document.addEventListener('touchstart', (e) => {
+            if (!modoCalendario) {
+                mostrarCalendario();
+            } else {
+                clearTimeout(timeoutCalendario);
+                timeoutCalendario = setTimeout(volverFotos, 10000);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        // SWIPE CALENDARIO
+        let startX = 0;
+        document.getElementById('calendario').addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+        });
+        document.getElementById('calendario').addEventListener('touchend', e => {
+            const endX = e.changedTouches[0].clientX;
+            if (startX - endX > 50) mesSiguiente();
+            if (endX - startX > 50) mesAnterior();
+        });
+
+        // CONFIGURACIÓN
+        document.getElementById('tiempo').onchange = function() {
+            tiempoFoto = parseInt(this.value) * 1000;
+            if (intervaloFotos) clearInterval(intervaloFotos);
+            if (!modoCalendario) iniciarSlideshow();
+        };
+
+        function toggleConfig() {
+            document.getElementById('config').classList.toggle('oculto');
+        }
+
+        // INICIO
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('slideshow').classList.add('activo');
+            document.getElementById('config').classList.add('oculto');
+            cargarFotos();
+            cargarPronostico();
+        });
+    </script>
+</body>
+</html>
+
