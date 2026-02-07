@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -7,12 +7,10 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100vh; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-
     #slideshow { position: fixed; inset: 0; display: none; }
     #slideshow.activo { display: block; }
     .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
     .foto.activa { opacity: 1; }
-
     #calendario { position: fixed; inset: 0; display: none; background: #111; color: #fff; display: flex; flex-direction: column; }
     #header-cal { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #222; font-size: 20px; }
     #dias-semana { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; padding: 8px; background: #181818; font-weight: bold; }
@@ -21,194 +19,187 @@
     .dia.activo { background: #007AFF; }
     .dia.vacio { background: transparent; cursor: default; }
     .evento { margin-top: 4px; font-size: 11px; }
-
-    #banner { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.9); color: #fff; padding: 8px; font-size: 14px; text-align: center; z-index: 10; }
-
+    #banner { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.9); color: #fff; padding: 10px; font-size: 16px; text-align: center; z-index: 10; height: 60px; line-height: 30px; }
     #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,.9); color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; z-index: 11; }
-    #config input { width: 70px; }
     #config.oculto { display: none; }
-    button { cursor: pointer; }
+    button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 6px; }
+    input { width: 70px; padding: 4px; }
   </style>
 </head>
 <body>
-  <!-- Slideshow -->
   <div id="slideshow" class="activo">
     <div id="fotos-container"></div>
   </div>
-
-  <!-- Calendario -->
   <div id="calendario">
     <div id="header-cal">
-      <button onclick="mesAnterior()">&lt;</button>
+      <button onclick="mesAnterior()">‹</button>
       <span id="mes-anio"></span>
-      <button onclick="mesSiguiente()">&gt;</button>
+      <button onclick="mesSiguiente()">›</button>
     </div>
     <div id="dias-semana">
       <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
     </div>
     <div id="grid-dias"></div>
   </div>
-
-  <!-- Banner inferior -->
-<!-- Banner inferior DOBLE ALTO con tiempo por horas -->
-<div id="banner" style="height: 60px; line-height: 30px; font-size: 16px; padding: 10px;">
-  <div id="pronostico" style="font-weight: bold;">Cargando tiempo Madrid...</div>
-  <div style="font-size: 14px; margin-top: 4px;">
-    <span id="reloj">00:00</span> | 
-    <span id="fecha">-- feb</span>
+  <div id="banner">
+    <div id="pronostico">Cargando tiempo Madrid...</div>
+    <div style="font-size: 14px; margin-top: 4px;">
+      <span id="reloj">00:00</span> | <span id="fecha">-- feb</span>
+    </div>
   </div>
-</div>
+  <div id="config">
+    <label>Tiempo foto (s): <input id="tiempo" type="number" value="10" min="5" max="60"></label><br>
+    <button onclick="toggleConfig()">Cerrar</button>
+  </div>
 
-<script>
-// === TU API KEY YA FUNCIONA ===
-const WEATHER_KEY = '61ea532fbef834bfea83f7484';
-const LAT_MADRID = 40.4168;
-const LON_MADRID = -3.7038;
+  <script>
+    // Configuración (¡CAMBIAR API KEY por una nueva válida!)
+    const WEATHER_KEY = '61ea532fbef834bfea83f7484'; // ← NUEVA en openweathermap.org/api (gratis)
+    const LAT_MADRID = 40.4168;
+    const LON_MADRID = -3.7038;
 
-// FOTOS (mantiene lo anterior)
-const fotosPrueba = [
-  'https://picsum.photos/1920/1080?random=1',
-  'https://picsum.photos
+    // Fotos prueba (FIABLES, sin CORS)
+    const fotosPrueba = [
+      'https://picsum.photos/1920/1080?random=1',
+      'https://picsum.photos/1920/1080?random=2',
+      'https://picsum.photos/1920/1080?random=3',
+      'https://picsum.photos/1920/1080?random=4',
+      'https://picsum.photos/1920/1080?random=5'
+    ];
 
-  // FOTOS DE PRUEBA (para que veas algo sí o sí)
-  const fotosPrueba = [
-    'https://picsum.photos/1920/1080?random=1',
-    'https://picsum.photos/1920/1080?random=2',
-    'https://picsum.photos/1920/1080?random=3',
-    'https://picsum.photos/1920/1080?random=4',
-    'https://picsum.photos/1920/1080?random=5'
-  ];
+    let fotos = [], indiceActual = 0, intervalo = null, tiempoFoto = 10000, modoCalendario = false, timeoutCalendario = null;
+    const eventos = {
+      '2026-02-10': 'Ski Formigal',
+      '2026-02-15': 'Revisión ascensor',
+      '2026-02-20': 'Golf'
+    };
 
-  let fotos = [];
-  let indiceActual = 0;
-  let intervalo = null;
-  let tiempoFoto = 10000;
-  let modoCalendario = false;
-  let timeoutCalendario = null;
-
-  const eventos = {
-    '2026-02-10': 'Ski Formigal',
-    '2026-02-15': 'Revisión ascensor',
-    '2026-02-20': 'Golf'
-  };
-
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+    // Funciones fotos
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
-    return arr;
-  }
-
-  function cargarFotos() {
-    fotos = shuffle([...fotosPrueba]);
-    iniciarSlideshow();
-  }
-
-  function iniciarSlideshow() {
-    if (intervalo) clearInterval(intervalo);
-    indiceActual = 0;
-    mostrarFoto();
-    intervalo = setInterval(siguienteFoto, tiempoFoto);
-  }
-
-  function mostrarFoto() {
-    const cont = document.getElementById('fotos-container');
-    cont.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = fotos[indiceActual % fotos.length];
-    img.className = 'foto activa';
-    cont.appendChild(img);
-  }
-
-  function siguienteFoto() {
-    indiceActual++;
-    mostrarFoto();
-  }
-  // Calendario
-  let fechaActual = new Date();
-
-  function renderCalendario() {
-    const mesAnio = document.getElementById('mes-anio');
-    const grid = document.getElementById('grid-dias');
-
-    const primerDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-    const ultimoDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
-    const diasMes = ultimoDia.getDate();
-    const offset = (primerDia.getDay() || 7) - 1; // lunes=0
-
-    mesAnio.textContent = primerDia.toLocaleDateString('es-ES', {
-      month: 'long', year: 'numeric'
-    }).toUpperCase();
-
-    let html = '';
-    for (let i = 0; i < offset; i++) html += '<div class="dia vicio"></div>';
-    for (let d = 1; d <= diasMes; d++) {
-      const key = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const ev = eventos[key] ? `<div class="evento">${eventos[key]}</div>` : '';
-      html += `<div class="dia" onclick="seleccionarDia('${key}')">${d}${ev}</div>`;
+    function cargarFotos() {
+      fotos = shuffle([...fotosPrueba]);
+      iniciarSlideshow();
     }
-    grid.innerHTML = html;
-  }
+    function iniciarSlideshow() {
+      if (intervalo) clearInterval(intervalo);
+      indiceActual = 0;
+      mostrarFoto();
+      intervalo = setInterval(siguienteFoto, tiempoFoto);
+    }
+    function mostrarFoto() {
+      const cont = document.getElementById('fotos-container');
+      cont.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = fotos[indiceActual % fotos.length];
+      img.className = 'foto activa';
+      img.onerror = () => img.src = fotosPrueba[0]; // Fallback
+      cont.appendChild(img);
+    }
+    function siguienteFoto() {
+      indiceActual++;
+      mostrarFoto();
+    }
 
-  function mesAnterior(){ fechaActual.setMonth(fechaActual.getMonth()-1); renderCalendario(); }
-  function mesSiguiente(){ fechaActual.setMonth(fechaActual.getMonth()+1); renderCalendario(); }
-  function seleccionarDia(f){ alert(f + ': ' + (eventos[f] || 'Libre')); }
+    // Calendario
+    let fechaActual = new Date();
+    function renderCalendario() {
+      const mesAnio = document.getElementById('mes-anio');
+      const grid = document.getElementById('grid-dias');
+      const primerDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+      const ultimoDia = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
+      const diasMes = ultimoDia.getDate();
+      const offset = (primerDia.getDay() || 7) - 1;
+      mesAnio.textContent = primerDia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+      let html = '';
+      for (let i = 0; i < offset; i++) html += '<div class="dia vacio"></div>'; // ← FIX typo
+      for (let d = 1; d <= diasMes; d++) {
+        const key = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const ev = eventos[key] ? `<div class="evento">${eventos[key]}</div>` : '';
+        html += `<div class="dia" onclick="seleccionarDia('${key}')">${d}${ev}</div>`;
+      }
+      grid.innerHTML = html;
+    }
+    function mesAnterior() { fechaActual.setMonth(fechaActual.getMonth()-1); renderCalendario(); }
+    function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth()+1); renderCalendario(); }
+    function seleccionarDia(f) { alert(f + ': ' + (eventos[f] || 'Libre')); }
 
-  // Reloj y banner (simplificado)
-  function actualizarReloj(){
-    const ahora = new Date().toLocaleString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'});
-    const fecha = new Date().toLocaleDateString('es-ES',{timeZone:'Europe/Madrid',weekday:'short',day:'numeric',month:'short'});
-    document.getElementById('reloj').textContent = ahora;
-    document.getElementById('fecha').textContent = fecha;
-  }
-  setInterval(actualizarReloj,1000);
+    // Reloj
+    function actualizarReloj() {
+      const ahora = new Date().toLocaleString('es-ES', {timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit'});
+      const fecha = new Date().toLocaleDateString('es-ES', {timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'short'});
+      document.getElementById('reloj').textContent = ahora;
+      document.getElementById('fecha').textContent = fecha;
+    }
+    setInterval(actualizarReloj, 1000);
 
-  // Mostrar / ocultar calendario
-  function mostrarCalendario(){
-    modoCalendario = true;
-    document.getElementById('slideshow').classList.remove('activo');
-    document.getElementById('slideshow').style.display='none';
-    document.getElementById('calendario').style.display='flex';
-    renderCalendario();
-    timeoutCalendario = setTimeout(volverFotos,10000);
-  }
+    // ← FUNCIÓN TIEMPO NUEVA (¡FALTABA!)
+    async function cargarTiempo() {
+      try {
+        const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${LAT_MADRID}&lon=${LON_MADRID}&appid=${WEATHER_KEY}&units=metric&lang=es&exclude=minutely,daily,history`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('API error: ' + res.status);
+        const data = await res.json();
+        const hoy = data.hourly.slice(0, 6).map(h => `${new Date(h.dt * 1000).getHours()}:00 ${Math.round(h.temp)}°C ${h.weather[0].description}`).join(' | ');
+        document.getElementById('pronostico').textContent = `Madrid hoy: ${hoy}`;
+      } catch (e) {
+        console.error('Tiempo falla:', e); // No bloquea app
+        document.getElementById('pronostico').textContent = 'Tiempo no disponible (revisa API key)';
+      }
+    }
 
-  function volverFotos(){
-    modoCalendario = false;
-    clearTimeout(timeoutCalendario);
-    document.getElementById('calendario').style.display='none';
-    document.getElementById('slideshow').style.display='block';
-    document.getElementById('slideshow').classList.add('activo');
-    iniciarSlideshow();
-  }
-
-  // Touch: un toque muestra calendario, pasados 10s vuelve a fotos
-  document.addEventListener('touchstart', function(e){
-    if (!modoCalendario) mostrarCalendario();
-    else {
+    // Mostrar/ocultar calendario
+    function mostrarCalendario() {
+      modoCalendario = true;
+      document.getElementById('slideshow').classList.remove('activo');
+      document.getElementById('slideshow').style.display = 'none';
+      document.getElementById('calendario').style.display = 'flex';
+      renderCalendario();
+      timeoutCalendario = setTimeout(volverFotos, 10000);
+    }
+    function volverFotos() {
+      modoCalendario = false;
       clearTimeout(timeoutCalendario);
-      timeoutCalendario = setTimeout(volverFotos,10000);
+      document.getElementById('calendario').style.display = 'none';
+      document.getElementById('slideshow').style.display = 'block';
+      document.getElementById('slideshow').classList.add('activo');
+      iniciarSlideshow();
     }
-    e.preventDefault();
-  }, {passive:false});
 
-  // Config
-  document.getElementById('tiempo').onchange = function(){
-    tiempoFoto = parseInt(this.value)*1000;
-    if (!modoCalendario) iniciarSlideshow();
-  };
-  function toggleConfig(){
-    document.getElementById('config').classList.toggle('oculto');
-  }
+    // Touch: solo mostrar calendario
+    document.addEventListener('touchstart', (e) => {
+      if (!modoCalendario) mostrarCalendario();
+      else {
+        clearTimeout(timeoutCalendario);
+        timeoutCalendario = setTimeout(volverFotos, 10000);
+      }
+      e.preventDefault();
+    }, {passive: false});
 
-  // Inicio
-  window.addEventListener('load', function(){
-    document.getElementById('slideshow').style.display='block';
-    document.getElementById('calendario').style.display='none';
-    cargarFotos();
-    actualizarReloj();
-  });
+    // Config
+    document.getElementById('tiempo').onchange = function() {
+      tiempoFoto = parseInt(this.value) * 1000;
+      if (!modoCalendario) iniciarSlideshow();
+    };
+    function toggleConfig() {
+      document.getElementById('config').classList.toggle('oculto');
+    }
+
+    // ← INICIO (sin bloqueos)
+    window.addEventListener('load', () => {
+      document.getElementById('slideshow').style.display = 'block';
+      document.getElementById('calendario').style.display = 'none';
+      document.getElementById('config').classList.add('oculto');
+      cargarFotos();
+      actualizarReloj();
+      cargarTiempo(); // ← Async, no bloquea
+      setInterval(cargarTiempo, 1800000); // Cada 30min
+    });
   </script>
 </body>
 </html>
