@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mis Fotos Aluche iPad</title>
+  <title>Mis Fotos Aluche iPad - FIXED</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100vh; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -11,11 +11,11 @@
     #slideshow.activo { display: block; }
     .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
     .foto.activa { opacity: 1; }
-    #calendario { position: fixed; inset: 0; display: none; background: #111; color: #fff; display: flex; flex-direction: column; }
+    #calendario { position: fixed; inset: 0; display: none; background: #111; color: #fff; z-index: 20; display: flex; flex-direction: column; }
     #header-cal { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #222; font-size: 20px; }
-    #dias-semana { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; padding: 8px; background: #181818; font-weight: bold; }
+    #dias-semana { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; padding: 8px; background: #181818; font-weight: bold; font-size: 14px; }
     #grid-dias { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; padding: 10px; flex: 1; overflow-y: auto; }
-    .dia { padding: 12px 4px; border-radius: 8px; text-align: center; background: #222; cursor: pointer; font-size: 14px; }
+    .dia { padding: 12px 8px; border-radius: 8px; text-align: center; background: #222; cursor: pointer; font-size: 16px; transition: background 0.2s; }
     .dia.activo { background: #007AFF; }
     .dia.vacio { background: transparent; cursor: default; }
     .evento { margin-top: 4px; font-size: 11px; }
@@ -25,17 +25,18 @@
       font-size: 15px; text-align: center; z-index: 10; 
       height: 85px; line-height: 1.3; display: flex; flex-direction: column; justify-content: center;
     }
-    #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,.9); color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; z-index: 11; }
+    #config { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,.95); color: #fff; padding: 16px; border-radius: 12px; font-size: 14px; z-index: 15; backdrop-filter: blur(10px); }
     #config.oculto { display: none; }
-    button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 6px; }
-    input { width: 70px; padding: 4px; }
-    .icono-tiempo { font-size: 18px; margin-right: 2px; }
-    #status { position: fixed; top: 10px; left: 10px; background: rgba(0,122,255,.9); color: white; padding: 8px; border-radius: 6px; font-size: 12px; z-index: 12; }
-    .dia:hover { background: #0056CC !important; }
+    button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; margin: 2px; }
+    input { width: 70px; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #333; color: white; }
+    .icono-tiempo { font-size: 22px; margin-right: 4px; }
+    #status { position: fixed; top: 10px; left: 10px; background: rgba(0,122,255,.95); color: white; padding: 12px; border-radius: 10px; font-size: 14px; z-index: 25; backdrop-filter: blur(10px); max-width: 300px; }
+    .dia:hover { background: #005BBB !important; }
   </style>
 </head>
 <body>
-  <div id="status">Cargando álbum fotos...</div>
+  <div id="status">🚀 Iniciando Aluche Slideshow...</div>
+  
   <div id="slideshow" class="activo">
     <div id="fotos-container"></div>
   </div>
@@ -43,215 +44,262 @@
   <!-- CALENDARIO -->
   <div id="calendario">
     <div id="header-cal">
-      <button onclick="toggleCalendario()">📅</button>
-      <span id="mes-anio"></span>
+      <button onclick="toggleCalendario()">✕</button>
+      <span id="mes-anio">Cargando...</span>
       <div>
-        <button onclick="mesAnterior()">&lt;</button>
-        <button onclick="mesSiguiente()">&gt;</button>
+        <button onclick="mesAnterior()">‹</button>
+        <button onclick="mesSiguiente()">›</button>
       </div>
     </div>
-    <div id="dias-semana">
-      <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
-    </div>
+    <div id="dias-semana"></div>
     <div id="grid-dias"></div>
   </div>
   
-  <!-- BANNER TIEMPO -->
+  <!-- BANNER INFO -->
   <div id="banner">
-    <div id="reloj">00:00</div>
-    <div id="tiempo-aluche">-- Aluche -- <span id="icono-tiempo"></span> --°C</div>
+    <div id="reloj" style="font-size: 28px; font-weight: bold;">--:--</div>
+    <div id="tiempo-aluche">Aluche <span id="icono-tiempo">🌤️</span> --°C • 07/02/2026</div>
   </div>
   
   <!-- CONFIG -->
   <div id="config">
-    <div>Tiempo foto: <input id="tiempo-input" type="number" value="10" min="3" max="60">s</div>
-    <button onclick="cambiarTiempo()">OK</button>
-    <br><button onclick="toggleCalendario()">Calendario</button>
-    <br><button onclick="toggleConfig()">X</button>
+    <div>⏱️ Tiempo foto: <input id="tiempo-input" type="number" value="10" min="3" max="60"> seg</div>
+    <button onclick="cambiarTiempo()">Actualizar</button><br>
+    <button onclick="toggleCalendario()">📅 Calendario</button><br>
+    <button onclick="cargarFotosAlbum()">🔄 Nuevo álbum</button><br>
+    <button onclick="toggleConfig()">✕</button>
   </div>
 
   <script>
-    // ← CONFIGURACIÓN
+    // ===================== CONFIG =====================
     const ALBUM_URL = 'https://photos.app.goo.gl/8FneEkAkuGG3Q66C8';
     const WEATHER_KEY = '7be48cf62294a005f85054f13ff72ea9';
     const LAT_ALUCHE = 40.3845;
     const LON_ALUCHE = -3.7280;
     
     const iconosTiempo = {
-      '01d': '☀️', '02d': '⛅', '03d': '☁️', '04d': '☁️', '09d': '🌦️', '10d': '🌧️', '11d': '⛈️', '13d': '❄️', '50d': '🌫️',
-      '01n': '🌙', '02n': '☁️', '03n': '☁️', '04n': '☁️', '09n': '🌦️', '10n': '🌧️', '11n': '⛈️', '13n': '❄️', '50n': '🌫️'
+      '01d': '☀️', '02d': '⛅', '03d': '☁️', '04d': '☁️', '09d': '🌦️',
+      '10d': '🌧️', '11d': '⛈️', '13d': '❄️', '50d': '🌫️', '01n': '🌙',
+      '02n': '☁️', '03n': '☁️', '04n': '☁️', '09n': '🌦️', '10n': '🌧️',
+      '11n': '⛈️', '13n': '❄️', '50n': '🌫️'
     };
     
-    let fotos = [], indiceActual = 0, intervalo = null, tiempoFoto = 10000, modoCalendario = false;
+    let fotos = [], indiceActual = 0, intervalo = null, tiempoFoto = 10000;
     let mesActual = new Date().getMonth(), anioActual = new Date().getFullYear();
 
-    // ← SCRAPER ROBUSTO CORREGIDO ✨
-    async function cargarFotosAlbum() {
-      try {
-        document.getElementById('status').textContent = 'Extrayendo fotos álbum...';
-        
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(ALBUM_URL)}`;
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`Fetch falló: ${response.status}`);
-        const html = await response.text();
-        
-        fotos = [];
-        
-        // Regex flexible AF_initDataCallback
-        const matches = html.match(/AF_initDataCallback\s*\(\s*(\[.*?\])\s*,\s*['"].*?['"]\s*\);/s);
-        if (matches) {
-          let data;
-          try {
-            data = JSON.parse(matches[1]);
-          } catch { throw new Error('JSON inválido'); }
-          
-          const albumData = data.find(item => Array.isArray(item) && (item[0] === 85 || item[0] > 80));
-          if (albumData?.[2]?.[0]?.[0]) {
-            const items = albumData[2][0][0];
-            for (let i = 0; i < Math.min(items.length, 50); i++) {
-              const imgId = items[i]?.[1]?.[4]?.[0]?.[0];
-              if (imgId) fotos.push(`https://lh3.googleusercontent.com/d/${imgId}=w1920-h1080-rw`);
-            }
-          }
-        }
-        
-        // Fallback: busca URLs lh3 directas
-        if (fotos.length === 0) {
-          const imgMatches = html.match(/"(https:\/\/lh3\.googleusercontent\.com\/[^"]{20,})"/g);
-          if (imgMatches) {
-            fotos = imgMatches.slice(0,50).map(m => m.slice(1,-1).replace(/=s\d+-w\d+/,'=w1920-h1080-rw'));
-          }
-        }
-        
-        if (fotos.length === 0) throw new Error('No fotos encontradas');
-        
-        fotos = shuffle(fotos);
-        document.getElementById('status').textContent = `✅ ${fotos.length} fotos cargadas`;
-        setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
-        iniciarSlideshow();
-      } catch (e) {
-        console.error('Error álbum:', e);
-        document.getElementById('status').textContent = `❌ ${e.message.slice(0,30)}... usando prueba`;
-        setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
-        cargarFotosPrueba();
-      }
-    }
+    // ===================== MÚLTIPLES PROXIES 2026 =====================
+    const PROXIES = [
+      'https://api.allorigins.win/raw?url=',
+      'https://corsproxy.io/?',
+      'https://thingproxy.freeboard.io/fetch/',
+      'https://api.codetabs.com/v1/proxy?quest='
+    ];
 
-    function cargarFotosPrueba() {
-      fotos = shuffle([
-        'https://picsum.photos/1920/1080?random=1',
-        'https://picsum.photos/1920/1080?random=2',
-        'https://picsum.photos/1920/1080?random=3',
-        'https://picsum.photos/1920/1080?random=4',
-        'https://picsum.photos/1920/1080?random=5'
-      ]);
+    // ===================== CARGA FOTOS ULTRA-ROBUSTA =====================
+    async function cargarFotosAlbum() {
+      const status = document.getElementById('status');
+      status.style.display = 'block';
+      
+      // Intentar álbum Google Photos
+      status.textContent = '🔍 Probando álbum Google Photos...';
+      const albumFotos = await scrapeAlbum();
+      
+      if (albumFotos.length > 0) {
+        fotos = shuffle(albumFotos.slice(0, 50));
+        status.textContent = `✅ ¡${fotos.length} fotos del álbum!`;
+      } else {
+        status.textContent = '📸 Usando galería HD infinita (Picsum)';
+        fotos = []; // Trigger infinito
+      }
+      
+      setTimeout(() => status.style.display = 'none', 2500);
       iniciarSlideshow();
     }
 
-    function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+    async function scrapeAlbum() {
+      for (let i = 0; i < PROXIES.length; i++) {
+        try {
+          const status = document.getElementById('status');
+          status.textContent = `Proxy ${i+1}/${PROXIES.length}...`;
+          
+          const proxyUrl = `${PROXIES[i]}${encodeURIComponent(ALBUM_URL)}`;
+          const response = await fetch(proxyUrl);
+          if (!response.ok) continue;
+          
+          const html = await response.text();
+          
+          // Buscar lh3.googleusercontent.com URLs
+          const matches = [...html.matchAll(/(https:\/\/lh3\.googleusercontent\.com\/[^&\s"]+)/g)];
+          const urls = matches.map(m => {
+            let url = m[1];
+            if (url.includes('/d/')) {
+              return url.replace(/=w\d+-h\d+|vt=[^&]+/, '=w1920-h1080-rw');
+            }
+            return null;
+          }).filter(Boolean);
+          
+          if (urls.length > 3) return urls; // Éxito
+          
+        } catch (e) {
+          console.warn(`Proxy ${i+1} falló:`, e);
+        }
       }
-      return arr;
+      return []; // Todos fallaron
     }
 
-    // SLIDESHOW
+    // ===================== SLIDESHOW CON INFINITO =====================
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
     function iniciarSlideshow() {
       if (intervalo) clearInterval(intervalo);
-      indiceActual = 0; mostrarFoto();
+      indiceActual = 0;
+      mostrarFoto();
       intervalo = setInterval(siguienteFoto, tiempoFoto);
     }
+
     function mostrarFoto() {
       const cont = document.getElementById('fotos-container');
       cont.innerHTML = '';
       const img = document.createElement('img');
-      img.src = fotos[indiceActual % fotos.length];
+      
+      let src;
+      if (fotos.length > 0) {
+        src = fotos[indiceActual % fotos.length];
+      } else {
+        // Galería infinita Aluche-style
+        src = `https://picsum.photos/seed/aluche-${indiceActual}/1920/1080`;
+      }
+      
+      img.src = src;
       img.className = 'foto activa';
-      img.onerror = () => { 
-        img.src = 'https://picsum.photos/1920/1080?random=' + Math.random(); 
+      img.onerror = () => {
+        img.src = `https://picsum.photos/seed/aluche-fail-${Math.random()}/1920/1080`;
       };
       cont.appendChild(img);
     }
-    function siguienteFoto() { indiceActual++; mostrarFoto(); }
 
-    // CALENDARIO
+    function siguienteFoto() {
+      indiceActual++;
+      mostrarFoto();
+    }
+
+    // ===================== CALENDARIO =====================
     function renderCalendario() {
       const fecha = new Date(anioActual, mesActual, 1);
-      document.getElementById('mes-anio').textContent = fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      document.getElementById('mes-anio').textContent = 
+        fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
       
-      const dias = document.getElementById('grid-dias');
-      dias.innerHTML = '';
+      const diasSemana = document.getElementById('dias-semana');
+      diasSemana.innerHTML = '<div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>';
       
-      const primerDia = new Date(anioActual, mesActual, 1).getDay();
+      const gridDias = document.getElementById('grid-dias');
+      gridDias.innerHTML = '';
+      
+      const primerDia = new Date(anioActual, mesActual, 1).getDay() || 7;
       const diasMes = new Date(anioActual, mesActual + 1, 0).getDate();
       
-      // Días vacíos
-      for (let i = 0; i < (primerDia === 0 ? 6 : primerDia - 1); i++) {
+      // Vacíos inicio
+      for (let i = 1; i < primerDia; i++) {
         const div = document.createElement('div');
         div.className = 'dia vacio';
-        dias.appendChild(div);
+        gridDias.appendChild(div);
       }
       
-      // Días mes
+      // Días
       for (let dia = 1; dia <= diasMes; dia++) {
         const div = document.createElement('div');
         div.className = 'dia';
         div.textContent = dia;
-        div.onclick = () => div.classList.toggle('activo');
-        dias.appendChild(div);
+        div.onclick = () => {
+          document.querySelectorAll('.dia').forEach(d => d.classList.remove('activo'));
+          div.classList.add('activo');
+        };
+        gridDias.appendChild(div);
       }
     }
-    function mesAnterior() { mesActual--; if (mesActual < 0) { mesActual = 11; anioActual--; } renderCalendario(); }
-    function mesSiguiente() { mesActual++; if (mesActual > 11) { mesActual = 0; anioActual++; } renderCalendario(); }
-    function toggleCalendario() {
-      modoCalendario = !modoCalendario;
-      document.getElementById('calendario').style.display = modoCalendario ? 'flex' : 'none';
-      document.getElementById('slideshow').style.display = modoCalendario ? 'none' : 'block';
-      if (!modoCalendario) renderCalendario();
+
+    function mesAnterior() { 
+      mesActual--; 
+      if (mesActual < 0) { mesActual = 11; anioActual--; } 
+      renderCalendario(); 
+    }
+    function mesSiguiente() { 
+      mesActual++; 
+      if (mesActual > 11) { mesActual = 0; anioActual++; } 
+      renderCalendario(); 
     }
 
-    // TIEMPO Y RELOJ
+    function toggleCalendario() {
+      const cal = document.getElementById('calendario');
+      const slide = document.getElementById('slideshow');
+      cal.style.display = cal.style.display === 'flex' ? 'none' : 'flex';
+      slide.style.display = slide.style.display === 'block' ? 'none' : 'block';
+      if (cal.style.display === 'flex') renderCalendario();
+    }
+
+    // ===================== TIEMPO + RELOJ =====================
     function actualizarReloj() {
       const ahora = new Date();
-      document.getElementById('reloj').textContent = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('reloj').textContent = 
+        ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('tiempo-aluche').innerHTML = 
+        `Aluche <span id="icono-tiempo">🌤️</span> ${Math.round(ahora.getDate())}/${ahora.getMonth()+1}/${ahora.getFullYear()}`;
     }
-    
+
     async function cargarTiempo() {
       try {
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT_ALUCHE}&lon=${LON_ALUCHE}&appid=${WEATHER_KEY}&units=metric&lang=es`;
         const res = await fetch(url);
         const data = await res.json();
-        const icono = iconosTiempo[data.weather[0].icon] || '🌤️';
-        document.getElementById('tiempo-aluche').innerHTML = `${data.name} ${icono} ${Math.round(data.main.temp)}°C`;
+        const iconoKey = data.weather[0].icon;
+        document.getElementById('icono-tiempo').textContent = iconosTiempo[iconoKey] || '🌤️';
+        document.getElementById('tiempo-aluche').innerHTML = 
+          `${data.name} ${iconosTiempo[iconoKey] || '🌤️'} ${Math.round(data.main.temp)}°C • 07/02/2026`;
       } catch (e) {
-        document.getElementById('tiempo-aluche').textContent = 'Tiempo no disponible';
+        console.warn('Tiempo fail:', e);
       }
     }
 
-    // CONFIG
+    // ===================== CONFIG =====================
     function cambiarTiempo() {
-      const nuevoTiempo = parseInt(document.getElementById('tiempo-input').value) * 1000;
-      if (nuevoTiempo >= 3000 && nuevoTiempo <= 60000) {
-        tiempoFoto = nuevoTiempo;
+      const valor = parseInt(document.getElementById('tiempo-input').value);
+      if (valor >= 3 && valor <= 60) {
+        tiempoFoto = valor * 1000;
         if (intervalo) clearInterval(intervalo);
-        intervalo = setInterval(siguienteFoto, tiempoFoto);
+        setTimeout(iniciarSlideshow, 100);
+        document.getElementById('status').textContent = `⏱️ ${valor}s OK`;
+        setTimeout(() => document.getElementById('status').style.display = 'none', 1500);
       }
     }
+
     function toggleConfig() {
       document.getElementById('config').classList.toggle('oculto');
     }
 
-    // ← INICIALIZACIÓN
+    // ===================== INICIALIZACIÓN =====================
     window.addEventListener('load', async () => {
-      toggleConfig(); // Oculta config inicial
+      document.getElementById('status').textContent = '✅ Listo! Cargando fotos...';
+      
+      // Ocultar config inicial
+      document.getElementById('config').classList.add('oculto');
+      
+      // Cargar todo
       await cargarFotosAlbum();
       renderCalendario();
       actualizarReloj();
       cargarTiempo();
       
-      setInterval(actualizarReloj, 1000);
-      setInterval(cargarTiempo, 600000); // 10min
+      // Intervalos
+      setInterval(actualizarReloj, 500);
+      setInterval(cargarTiempo, 10 * 60 * 1000); // 10min
+      
+      setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
     });
   </script>
 </body>
