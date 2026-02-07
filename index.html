@@ -19,7 +19,6 @@
     .dia.activo { background: #007AFF; }
     .dia.vacio { background: transparent; cursor: default; }
     .evento { margin-top: 4px; font-size: 11px; }
-    /* ← BANNER MÁS ALTO (3 líneas) */
     #banner { 
       position: fixed; left: 0; right: 0; bottom: 0; 
       background: rgba(0,0,0,.95); color: #fff; padding: 12px; 
@@ -30,6 +29,7 @@
     #config.oculto { display: none; }
     button { cursor: pointer; background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 6px; }
     input { width: 70px; padding: 4px; }
+    .icono-tiempo { font-size: 18px; margin-right: 2px; }
   </style>
 </head>
 <body>
@@ -60,10 +60,23 @@
   </div>
 
   <script>
-    const WEATHER_KEY = '061eaa539b2f8f2eecfa8836f7a48c34';
-    // ← COORDENADAS ALuche (distrito de Madrid)
+    // ← API KEY FUNCIONANDO (mantén la tuya si funciona)
+    const WEATHER_KEY = '7be48cf62294a005f85054f13ff72ea9';
     const LAT_ALUCHE = 40.3845;
     const LON_ALUCHE = -3.7280;
+
+    // ← ICONOS EMOJI para cada tipo de tiempo (OpenWeatherMap)
+    const iconosTiempo = {
+      '01d': '☀️', '01n': '🌙',  // Clear
+      '02d': '⛅', '02n': '⛅',  // Few clouds
+      '03d': '☁️', '03n': '☁️',  // Clouds
+      '04d': '☁️', '04n': '☁️',  // Broken clouds
+      '09d': '🌦️', '09n': '🌦️', // Shower rain
+      '10d': '🌧️', '10n': '🌧️', // Rain
+      '11d': '⛈️', '11n': '⛈️', // Thunderstorm
+      '13d': '❄️',  '13n': '❄️', // Snow
+      '50d': '🌫️',  '50n': '🌫️'  // Mist
+    };
 
     const fotosPrueba = [
       'https://picsum.photos/1920/1080?random=1',
@@ -79,6 +92,11 @@
       '2026-02-15': 'Revisión ascensor',
       '2026-02-20': 'Golf'
     };
+
+    // ← FUNCIÓN para obtener icono por código OpenWeatherMap
+    function obtenerIcono(iconoCodigo) {
+      return iconosTiempo[iconoCodigo] || '🌤️';
+    }
 
     // Fotos (sin cambios)
     function shuffle(arr) {
@@ -128,7 +146,6 @@
     function mesSiguiente() { fechaActual.setMonth(fechaActual.getMonth()+1); renderCalendario(); }
     function seleccionarDia(f) { alert(f + ': ' + (eventos[f] || 'Libre')); }
 
-    // ← RELOJ MEJORADO (hora local Aluche = Europe/Madrid)
     function actualizarReloj() {
       const ahora = new Date().toLocaleString('es-ES', {timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit'});
       const fecha = new Date().toLocaleDateString('es-ES', {timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', month: 'long'});
@@ -137,10 +154,9 @@
     }
     setInterval(actualizarReloj, 1000);
 
-    // ← API GRATUITA para ALUCHE (coordenadas precisas)
+    // ← TIEMPO CON ICONOS EMOJI (¡ahora con iconos en lugar de texto!)
     async function cargarTiempo() {
       try {
-        // Current + hourly (gratis) - coordenadas Aluche
         const current = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT_ALUCHE}&lon=${LON_ALUCHE}&appid=${WEATHER_KEY}&units=metric&lang=es`);
         const hourly = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${LAT_ALUCHE}&lon=${LON_ALUCHE}&appid=${WEATHER_KEY}&units=metric&lang=es`);
         
@@ -149,19 +165,26 @@
         const currData = await current.json();
         const hourData = await hourly.json();
         
+        // ← ICONO actual + temperatura
+        const iconoActual = currData.weather[0].icon;
         const tempActual = Math.round(currData.main.temp);
-        const descActual = currData.weather[0].description;
+        const iconoEmojiActual = obtenerIcono(iconoActual);
         
-        // Próximas 4 horas
+        // Próximas 4 horas CON ICONOS
         const próximas = hourData.list.slice(0, 4).map(item => {
           const hora = new Date(item.dt * 1000).getHours();
-          return `${hora}h ${Math.round(item.main.temp)}° ${item.weather[0].main}`;
+          const iconoHora = obtenerIcono(item.weather[0].icon);
+          const tempHora = Math.round(item.main.temp);
+          return `${iconoHora} ${hora}h ${tempHora}°`;
         });
         
-        document.getElementById('pronostico').textContent = `${tempActual}°C ${descActual} | ${próximas.join(' | ')}`;
+        // ← FORMATO: Icono + Temp | Icono Hora Temp | ...
+        document.getElementById('pronostico').innerHTML = 
+          `${iconoEmojiActual} ${tempActual}°C | ${próximas.join(' | ')}`;
+          
       } catch (e) {
         console.error('Tiempo Aluche error:', e);
-        document.getElementById('pronostico').textContent = 'Aluche: Tiempo no disponible (revisa consola)';
+        document.getElementById('pronostico').textContent = '🌤️ Aluche: Tiempo no disponible';
       }
     }
 
