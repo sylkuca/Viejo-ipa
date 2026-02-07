@@ -112,7 +112,7 @@
       document.getElementById('reloj').textContent = ahora.toLocaleTimeString('es-ES', {hour12: false}) + '\n' + ahora.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'});
     }
 
-   async function cargarTiempo() {
+async function cargarTiempo() {
   try {
     // Tiempo actual para franja próxima
     const ahora = new Date();
@@ -150,6 +150,7 @@
     console.error('Tiempo error:', e);
   }
 }
+
 
     async function generarCalendario() {
       // Código calendario igual que antes (omitido por brevedad, copia del anterior)
